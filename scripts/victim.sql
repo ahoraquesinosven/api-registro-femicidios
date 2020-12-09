@@ -17,5 +17,3 @@ TABLESPACE pg_default;
 
 ALTER TABLE public.victims
     OWNER to vivas;
-
-    
