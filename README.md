@@ -1,5 +1,5 @@
 # api-registro-femicidios
-API for the private site to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.
+API to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.
 
 API set up using [PostgreSQL](https://www.postgresql.org/) as a database.
 
