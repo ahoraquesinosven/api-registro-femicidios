@@ -4,7 +4,7 @@
   "description": "API to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.",
   "main": "src/index.js",
   "scripts": {
-    "start": "echo \"This is working\"",
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

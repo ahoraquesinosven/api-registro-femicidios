@@ -5,14 +5,9 @@ services:
     build:
       context: .
       target: development
-    # env_file: ./dev/env
-    # volumes:
-    #   - './src:/opt/project/src'
-    #   - './spec:/opt/project/spec'
-    #   - './package.json:/opt/project/package.json'
-    #   - './dev:/opt/project/dev'
-    #   - 'cloudsql-sockets:/cloudsql'
-    #   - '~/.config/gcloud:/root/.config/gcloud'
+    volumes:
+       - './src:/opt/project/src'
+       - './spec:/opt/project/spec'
     ports:
       - '8080:8080'
 
