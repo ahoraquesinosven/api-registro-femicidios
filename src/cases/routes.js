@@ -1,15 +1,15 @@
+const knex = require('../services/knex');
 const Router = require("koa-joi-router");
+
 const Joi = Router.Joi;
-
 const router = new Router();
-
-const cases = [];
 
 router.route({ 
   method: "get",
   path: '/v1/cases', 
   handler: async (ctx) => {
-    ctx.body = cases;
+    const result = await knex.select().from("cases");
+    ctx.body = result;
   }
 });
 
@@ -20,13 +20,13 @@ router.route({
     type: 'json',
     failure: 422,
     body: Joi.object({
-      date: Joi.date()
+      ocurredAt: Joi.date()
         .iso()
         .required()
     }),
   },
   handler: async (ctx) => {
-    cases.push(ctx.request.body);
+    await knex.insert(ctx.request.body).into("cases");
     ctx.response.status=204;
   },
 });

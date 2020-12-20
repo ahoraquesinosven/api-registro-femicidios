@@ -18,8 +18,10 @@
   },
   "homepage": "https://github.com/ahoraquesinosven/api-registro-femicidios#readme",
   "dependencies": {
+    "knex": "^0.21.14",
     "koa": "^2.13.0",
-    "koa-joi-router": "^7.0.0"
+    "koa-joi-router": "^7.0.0",
+    "pg": "^8.5.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.6"
