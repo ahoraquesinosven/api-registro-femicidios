@@ -6,10 +6,10 @@ CREATE TABLE public.victims
 (
     id bigint NOT NULL,
     age bigint,
-    first_name character varying(255) COLLATE pg_catalog."default",
-    last_name character varying(255) COLLATE pg_catalog."default",
-    gender character varying(20) COLLATE pg_catalog."default",
-    nationality character varying(3) COLLATE pg_catalog."default",
+    first_name character varying(255),
+    last_name character varying(255),
+    gender character varying(20), ---ENUM
+    nationality character varying(3), --ISO3
     CONSTRAINT victims_pkey PRIMARY KEY (id)
 )
 
