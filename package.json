@@ -1,0 +1,20 @@
+{
+  "name": "api-registro-femicidios",
+  "version": "1.0.0",
+  "description": "API to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "echo \"This is working\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahoraquesinosven/api-registro-femicidios.git"
+  },
+  "author": "Observatorio de las Violencias de Género \"Ahora Que Sí Nos Ven\"",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ahoraquesinosven/api-registro-femicidios/issues"
+  },
+  "homepage": "https://github.com/ahoraquesinosven/api-registro-femicidios#readme"
+}
