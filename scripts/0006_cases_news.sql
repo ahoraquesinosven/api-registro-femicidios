@@ -8,7 +8,7 @@ CREATE TABLE public.news
   source character varying(255),
   source_url character varying(255),
   news_body text, --we will scrape the body using the url
-  case_id bigint NOT NULL
+  case_id bigint NOT NULL,
     CONSTRAINT fk_cases_news
       FOREIGN KEY(case_id)
       REFERENCES cases ("id"),

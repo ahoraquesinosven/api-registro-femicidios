@@ -10,7 +10,7 @@ CREATE TABLE public.cases
     victim_id bigint NOT NULL,
     CONSTRAINT fk_victims_cases
       FOREIGN KEY(victim_id)
-      REFERENCES victims ("id")
+      REFERENCES victims ("id"),
     place_of_occurrence character varying(255), ---ENUM
     murder_way character varying(255), ---ENUM
     classification character varying(255), ---ENUM
