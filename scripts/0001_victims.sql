@@ -4,13 +4,12 @@
 
 CREATE TABLE public.victims
 (
-    id bigint NOT NULL,
+    "id" SERIAL PRIMARY KEY NOT NULL,
     age bigint,
     first_name character varying(255),
     last_name character varying(255),
-    gender character varying(20), ---ENUM
+    gender character varying(20) NOT NULL, ---ENUM
     nationality character varying(3), --ISO3
-    CONSTRAINT victims_pkey PRIMARY KEY (id)
 )
 
 TABLESPACE pg_default;
