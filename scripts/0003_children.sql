@@ -8,7 +8,10 @@ CREATE TABLE public.children
     first_name character varying(255),
     last_name character varying(255),
     age bigint,
-    victim_id bigint REFERENCES victims ("id")
+  	victim_id bigint,
+    CONSTRAINT fk_victim
+      FOREIGN KEY(victim_id)
+      REFERENCES victims ("id")
 )
 
 TABLESPACE pg_default;

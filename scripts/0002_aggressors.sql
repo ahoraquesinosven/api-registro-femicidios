@@ -2,7 +2,7 @@
 
 -- DROP TABLE public.aggresors;
 
-CREATE TABLE public.aggresors
+CREATE TABLE public.aggressors
 (
     "id" SERIAL NOT NULL PRIMARY KEY,
     first_name character varying(255),
