@@ -20,8 +20,7 @@ CREATE TABLE public.cases_aggressors
    commit_suicide boolean,
    attempt_suicide boolean,
    belongs_to_enforcement_agency boolean,
-   enforcement_agency character varying(255), --ENUM
-   comments text
+   enforcement_agency character varying(255) --ENUM
 )
 
 TABLESPACE pg_default;
