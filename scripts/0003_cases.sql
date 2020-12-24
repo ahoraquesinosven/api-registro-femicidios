@@ -5,6 +5,7 @@
 CREATE TABLE public.cases
 (
     "id" SERIAL NOT NULL PRIMARY KEY,
+    occurred_at date NOT NULL,
     city character varying(255),
     province character varying(255) NOT NULL, --ENUM
     victim_id bigint NOT NULL,
