@@ -11,7 +11,7 @@ We use a dockerized development environment, so you will need [docker](https://w
 
 ### Quick start
 
-* Run `docker-compose up`. This will take a bit the first time since the docker images need to be built or downloaded. Once done, the strapi admin console can be accessed at  
+* Run `docker compose up`. This will take a bit the first time since the docker images need to be built or downloaded. Once done, the strapi admin console can be accessed at  
 
 ## License
 

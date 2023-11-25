@@ -1,8 +1,6 @@
-const Knex = require('knex');
+import Knex from "knex";
 
-const knex = new Knex({
+export default new Knex({
   client: 'pg',
   connection: "postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios",
 });
-
-module.exports = knex;

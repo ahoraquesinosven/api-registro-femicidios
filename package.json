@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "API to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "start": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,12 +19,12 @@
   },
   "homepage": "https://github.com/ahoraquesinosven/api-registro-femicidios#readme",
   "dependencies": {
-    "knex": "^0.21.14",
+    "@koa/router": "^12.0.1",
+    "knex": "^3.0.1",
     "koa": "^2.13.0",
-    "koa-joi-router": "^7.0.0",
     "pg": "^8.5.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.6"
+    "nodemon": "^3.0.1"
   }
 }

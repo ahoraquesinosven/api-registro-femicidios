@@ -3,6 +3,7 @@ services:
   api:
     image: observatorio/api-registro-femicidios
     build:
+      network: host
       context: .
       target: development
     volumes:

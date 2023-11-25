@@ -1,8 +1,11 @@
-const Koa = require("koa");
-const caseRoutes = require('./cases/routes');
+import Koa from "koa";
+import routers from "./routers/index.js";
 
 const app = new Koa();
 
-app
-  .use(caseRoutes.middleware())
-  .listen(8080);
+routers.forEach((router) => {
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+});
+
+app.listen(8080);
