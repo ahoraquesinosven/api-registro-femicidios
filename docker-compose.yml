@@ -7,8 +7,12 @@ services:
       context: .
       target: development
     volumes:
-       - './src:/opt/project/src'
-       - './spec:/opt/project/spec'
+      - './package.json:/opt/project/package.json'
+      - './package-lock.json:/opt/project/package-lock.json'
+      - './knexfile.mjs:/opt/project/knexfile.mjs'
+      - './src:/opt/project/src'
+      - './spec:/opt/project/spec'
+      - './migrations:/opt/project/migrations'
     ports:
       - '8080:8080'
 

@@ -19,6 +19,8 @@ RUN npm --unsafe-perm install --only production --loglevel verbose
 
 # Setup the application code
 COPY src /opt/project/src
+COPY knexfile.mjs /opt/project
+COPY migrations /opt/project/migrations
 
 ################################################################################
 # Development environment
@@ -27,6 +29,7 @@ FROM dependencies AS development
 
 # Overwrite environment to development
 ENV NODE_ENV=development
+ENV PATH=./node_modules/.bin:$PATH
 
 # Setup development dependencies
 RUN npm --unsafe-perm install --only development --loglevel verbose
