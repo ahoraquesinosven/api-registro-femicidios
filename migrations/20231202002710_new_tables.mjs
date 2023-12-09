@@ -5,11 +5,11 @@
  */
 export const up = async (knex) => {
   
- knex.schema.withSchema('public').createTable('Victims', (table) => {
+ knex.schema.withSchema('public').createTable('victims', (table) => {
   table.increments('victim_id', { primaryKey: true }).notNullable();
   table.date('victim_creation');
   table.date('victim_last_update');
-  table.text('victim_name_lastname');
+  table.specificType('victim_name_lastname', 'character varying');
   table.integer('victim_age');
   table.string('victim_nationality', 3); 
   table.boolean('victim_prostitution');
@@ -21,12 +21,13 @@ export const up = async (knex) => {
   table.boolean('victim_children');
  });
 
- knex.schema.withSchema('public').createTable('Aggresors', (table) => {
+
+ knex.schema.withSchema('public').createTable('aggresors', (table) => {
   table.increments('aggresor_id', { primaryKey: true }).notNullable();
   table.date('aggresor_creation');
   table.date('aggresor_last_update');
-  table.text('aggresor_gender');
-  table.text('aggresor_name_lastname');
+  table.specificType('aggresor_gender', 'character varying');
+  table.specificType('aggresor_name_lastname', 'character varying');
   table.integer('aggresor_age');
   table.boolean('aggresor_legal_complaint_history');
   table.boolean('aggresor_cases_history');
@@ -35,11 +36,10 @@ export const up = async (knex) => {
  });
 
 
-
-knex.schema.withSchema('public').createTable('Cases', (table)=>{
+knex.schema.withSchema('public').createTable('cases', (table)=>{
   table.increments('case_id', { primaryKey: true}).notNullable();
-  table.foreign('victim_id').references('Victims.victim_id');
-  table.foreign('aggresor_id').references('Aggresors.aggresor_id');
+  table.foreign('victim_id').references('victims.victim_id');
+  table.foreign('aggresor_id').references('aggresors.aggresor_id');
   table.date('case_creation');
   table.date('last_update');
   table.date('incident_date');
@@ -49,7 +49,7 @@ knex.schema.withSchema('public').createTable('Cases', (table)=>{
   table.specificType('case_province', 'character varying');
   table.specificType('case_location', 'character varying');
   table.specificType('case_geographic_ubication', 'character varying');
-  table.text('case_place');
+  table.specificType('case_place', 'character varying');
   table.specificType('case_form', 'character varying');
   table.boolean('case_justice');
   table.integer('case_legal_complaints');
@@ -57,19 +57,19 @@ knex.schema.withSchema('public').createTable('Cases', (table)=>{
   table.boolean('case_organized_crime');
   table.text('case_organized_crime_notes');
   table.text('case_notes');
-  table.text('case_news_links');
+  table.specificType('case_news_links', 'text ARRAY');
  })
 
- knex.schema.withSchema('public').createTable('Bonds', (table) => {
+ knex.schema.withSchema('public').createTable('bonds', (table) => {
    table.increments('bond_id');
-   table.foreign('victim_id').references('Victims.victim_id'); 
-   table.foreign('aggresor_id').references('Aggresors.aggresor_id');
+   table.foreign('victim_id').references('victims.victim_id'); 
+   table.foreign('aggresor_id').references('aggresors.aggresor_id');
  })
 
 
- knex.schema.withSchema('public').createTable('Children', (table) => { 
+ knex.schema.withSchema('public').createTable('children', (table) => { 
   table.increments('child_id', { primaryKey: true }).notNullable();
-  table.foreign('victim_id').references('Victims.victim_id');
+  table.foreign('victim_id').references('victims.victim_id');
   table.date('child_creation');
   table.date('child_last_update');
   table.integer('victim_age');  
@@ -81,5 +81,9 @@ knex.schema.withSchema('public').createTable('Cases', (table)=>{
  * @returns { Promise<void> }
  */
 export const down = async (knex) => {
-  
+ knex.withSchema.dropTable('children')
+ knex.withSchema.dropTable('bonds') 
+ knex.withSchema.dropTable('cases') 
+ knex.withSchema.dropTable('aggresors') 
+ knex.withSchema.dropTable('victims') 
 };
