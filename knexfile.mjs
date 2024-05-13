@@ -1,6 +1,8 @@
+import config from 'src/config/values.js';
+
 export default {
   client: 'pg',
-  connection: "postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios",
+  connection: config.db.connectionString,
   migrations: {
     loadExtensions: ['.mjs'],
     directory: './migrations'

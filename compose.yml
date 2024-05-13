@@ -1,9 +1,7 @@
-version: "3.8"
 services:
   api:
     image: observatorio/api-registro-femicidios
     build:
-      network: host
       context: .
       target: development
     volumes:
@@ -11,10 +9,15 @@ services:
       - './package-lock.json:/opt/project/package-lock.json'
       - './knexfile.mjs:/opt/project/knexfile.mjs'
       - './src:/opt/project/src'
+      - './bin:/opt/project/bin'
       - './spec:/opt/project/spec'
       - './migrations:/opt/project/migrations'
     ports:
       - '8080:8080'
+    environment:
+      - AUTH_GOOGLE_CLIENT_ID
+      - AUTH_GOOGLE_CLIENT_SECRET
+      - DB_CONNECTION_STRING=postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios
 
   db:
     image: postgres
