@@ -18,6 +18,7 @@ services:
       - AUTH_GOOGLE_CLIENT_ID
       - AUTH_GOOGLE_CLIENT_SECRET
       - DB_CONNECTION_STRING=postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios
+      - SERVER_CANNONICAL_ORIGIN=http://localhost:8080
 
   db:
     image: postgres

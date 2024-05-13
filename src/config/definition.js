@@ -6,6 +6,12 @@ const entry = (params) => {
 };
 
 export default {
+  server: {
+    cannonicalOrigin: entry({
+      envKey: "SERVER_CANNONICAL_ORIGIN",
+      doc: "Cannonical origin for the server, used to compose absolute URL's in some endpoints. Ex: http://localhost:8080",
+    }),
+  },
   auth: {
     google: {
       clientId: entry({

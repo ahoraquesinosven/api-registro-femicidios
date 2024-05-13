@@ -1,5 +1,4 @@
 import Router from "@koa/router";
-import knex from "../services/knex.js";
 
 const router = new Router({
   prefix: '/v1/cases',
