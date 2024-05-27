@@ -1,5 +1,6 @@
 import Koa from "koa";
 import routers from "./routers/index.js";
+import cors from "@koa/cors";
 import { bodyParser } from "@koa/bodyparser";
 
 const app = new Koa();
