@@ -1,7 +1,7 @@
 import axios from 'axios';
 import {decodeJwt} from 'jose';
-import config from '../config/values.js';
-import {createNonce} from '../lib/crypto.js';
+import config from '../../config/values.js';
+import {createNonce} from '../../lib/crypto.js';
 
 let openIdConfiguration = null;
 const getOpenIdConfiguration = async () => {

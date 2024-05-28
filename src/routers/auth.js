@@ -1,6 +1,6 @@
 import Router from "@koa/router";
 import config from '../config/values.js';
-import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google.js';
+import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google/openid.js';
 import {createPKCEPair, createXSRFToken} from "../lib/crypto.js";
 import {authorizationRequest, tokenRequest} from "../lib/oauth.js";
 
