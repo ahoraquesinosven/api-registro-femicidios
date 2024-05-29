@@ -126,7 +126,7 @@ export const tokenRequest = {
       return {
         validationError: {
           error: "invalid_grant",
-          error_description: "Invalid code",
+          error_description: "Invalid verifier",
         },
       };
     }

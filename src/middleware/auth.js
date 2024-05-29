@@ -32,15 +32,7 @@ export async function requireServerAuth(ctx, next) {
     ctx.status = 401;
     return;
   }
-
-  const parsedAuthorization = authorization.match(/basic (\S*)/i);
-  if (!parsedAuthorization) {
-    ctx.status = 401;
-    return;
-  }
-
-  const key = parsedAuthorization[1];
-  if (key !== config.auth.internal.key) {
+  if (authorization !== config.auth.internal.key) {
     ctx.status = 401;
     return;
   }
