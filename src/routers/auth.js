@@ -3,6 +3,7 @@ import config from '../config/values.js';
 import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google/openid.js';
 import {createPKCEPair, createXSRFToken} from "../lib/crypto.js";
 import {authorizationRequest, tokenRequest} from "../lib/oauth.js";
+import { requireUserAuth } from "../middleware/auth.js";
 
 const router = new Router({
   prefix: "/auth",
@@ -110,30 +111,11 @@ router.post("token", "/token", async (ctx) => {
   ctx.body = token;
 });
 
-router.get("user", "/me", async (ctx) => {
-  const authorization = ctx.request.headers["authorization"];
-  if (!authorization) {
-    ctx.status = 401;
-    return;
-  }
-
-  const parsedAuthorization = authorization.match(/bearer (\S*)/i);
-  if (!parsedAuthorization) {
-    ctx.status = 401;
-    return;
-  }
-
-  const token = parsedAuthorization[1];
-  try {
-    const payload = await tokenRequest.verifyAccessToken(token);
-
-    ctx.body = {
-      name: payload.name,
-      pictureUrl: payload.picture,
-    };
-  } catch (e) {
-    ctx.status = 401;
-  }
+router.get("user", "/me", requireUserAuth, async (ctx) => {
+  ctx.body = {
+    name: ctx.state.token.name,
+    pictureUrl: ctx.state.token.picture,
+  };
 });
 
 export default router;

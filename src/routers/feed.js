@@ -1,12 +1,13 @@
 import Router from "@koa/router";
 import {fetchAllRssFeeds} from "../services/google/alerts.js";
 import {feedItemFromRss, insertNewFeedItems, fetchFeedItems} from "../data/feedItem.js";
+import { requireServerAuth, requireUserAuth } from "../middleware/auth.js";
 
 const router = new Router({
   prefix: "/v1/feed",
 });
 
-router.post("/refresh", async (ctx) => {
+router.post("/refresh", requireServerAuth, async (ctx) => {
   const feeds = await fetchAllRssFeeds();
   for (const feed of feeds) {
     const feedItems = feed.items.map(item => feedItemFromRss(feed, item));
@@ -16,7 +17,7 @@ router.post("/refresh", async (ctx) => {
   ctx.status = 200;
 });
 
-router.get("/items", async (ctx) => {
+router.get("/items", requireUserAuth, async (ctx) => {
   const items = await fetchFeedItems();
 
   ctx.body = items;

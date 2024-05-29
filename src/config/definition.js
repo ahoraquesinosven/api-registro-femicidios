@@ -44,6 +44,13 @@ export default {
         doc: "Encryption key for encrypting authorization codes."
       }),
     },
+
+    internal: {
+      key: entry({
+        envKey: "AUTH_INTERNAL_KEY",
+        doc: "Base64-encoded user:password pair, as defined by RFC7617"
+      }),
+    },
   },
 
   db: {
