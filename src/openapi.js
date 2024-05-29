@@ -1,9 +1,15 @@
+import config from "./config/values.js";
+
 class OpenApiDocument {
   document = {
     openapi: "3.1.0",
     info: {
       title: "AQSNV - Registro de Femicidios",
+      version: "1.0.0",
     },
+    servers: [
+      { url: config.server.cannonicalOrigin },
+    ],
     components: {
       securitySchemes: {
         oauth: {
@@ -11,9 +17,9 @@ class OpenApiDocument {
           description: "OAuth2.0 security scheme used for public endpoints",
           flows: {
             authorizationCode: {
-              authorizationUrl: "http://localhost:8080/auth/authorize",
-              tokenUrl: "http://localhost:8080/auth/token",
-              scopes: [],
+              authorizationUrl: "/auth/authorize",
+              tokenUrl: "/auth/token",
+              scopes: {},
             },
           },
         },
@@ -35,4 +41,27 @@ class OpenApiDocument {
   }
 }
 
-export default new OpenApiDocument();
+export const openApiDocument = new OpenApiDocument();
+
+export class OpenApiRouter {
+  nativeRouter;
+
+  constructor(nativeRouter) {
+    this.nativeRouter = nativeRouter;
+  }
+
+  operation(options) {
+    this.nativeRouter[options.method](
+      options.spec.operationId,
+      options.relativePath,
+      ...options.handlers,
+    );
+    openApiDocument.registerOperation(
+      this.nativeRouter.url(options.spec.operationId),
+      options.method,
+      options.spec,
+    );
+  }
+}
+
+

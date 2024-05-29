@@ -1,47 +1,57 @@
 import Router from "@koa/router";
 import {fetchAllRssFeeds} from "../services/google/alerts.js";
 import {feedItemFromRss, insertNewFeedItems, fetchFeedItems} from "../data/feedItem.js";
-import { requireServerAuth, requireUserAuth } from "../middleware/auth.js";
-import OpenApiDocument from "../openapi.js";
+import {requireServerAuth, requireUserAuth} from "../middleware/auth.js";
+import {OpenApiRouter} from "../openapi.js";
 
-const router = new Router({
+const router = new OpenApiRouter(new Router({
   prefix: "/v1/feed",
-});
+}));
 
-OpenApiDocument.registerOperation("/v1/feed/refresh", "post", {
-  tags: ["feed"],
-  summary: "Refreshes the feeds by connecting to our feed sources",
-  security: [{ "internal": [] }],
-  responses: {
-    "200": {
-      description: "Successful response",
+router.operation({
+  relativePath: "/refresh",
+  method: "post",
+  spec: {
+    tags: ["feed"],
+    summary: "Refreshes the feeds by connecting to our feed sources",
+    operationId: "v1FeedRefresh",
+    security: [{"internal": []}],
+    responses: {
+      "200": {
+        description: "Successful response",
+      },
     },
   },
-});
-router.post("/refresh", requireServerAuth, async (ctx) => {
-  const feeds = await fetchAllRssFeeds();
-  for (const feed of feeds) {
-    const feedItems = feed.items.map(item => feedItemFromRss(feed, item));
-    await insertNewFeedItems(feedItems);
-  }
+  handlers: [requireServerAuth, async (ctx) => {
+    const feeds = await fetchAllRssFeeds();
+    for (const feed of feeds) {
+      const feedItems = feed.items.map(item => feedItemFromRss(feed, item));
+      await insertNewFeedItems(feedItems);
+    }
 
-  ctx.status = 200;
-});
+    ctx.status = 200;
+  }]
+})
 
-OpenApiDocument.registerOperation("/v1/feed/items", "get", {
-  tags: ["feed"],
-  summary: "Retrieves the full list of feed items",
-  security: [{ "oauth": [] }],
-  responses: {
-    "200": {
-      description: "Successful response",
+router.operation({
+  relativePath: "/items",
+  method: "get",
+  spec: {
+    tags: ["feed"],
+    summary: "Retrieves the full list of feed items",
+    operationId: "v1FeedItems",
+    security: [{"oauth": []}],
+    responses: {
+      "200": {
+        description: "Successful response",
+      },
     },
   },
-});
-router.get("/items", requireUserAuth, async (ctx) => {
-  const items = await fetchFeedItems();
+  handlers: [requireUserAuth, async (ctx) => {
+    const items = await fetchFeedItems();
 
-  ctx.body = items;
+    ctx.body = items;
+  }]
 });
 
-export default router;
+export default router.nativeRouter;

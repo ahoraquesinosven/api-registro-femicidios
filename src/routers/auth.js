@@ -3,8 +3,6 @@ import config from '../config/values.js';
 import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google/openid.js';
 import {createPKCEPair, createXSRFToken} from "../lib/crypto.js";
 import {authorizationRequest, tokenRequest} from "../lib/oauth.js";
-import { requireUserAuth } from "../middleware/auth.js";
-import OpenApiDocument from "../openapi.js";
 
 const router = new Router({
   prefix: "/auth",
@@ -114,24 +112,6 @@ router.post("token", "/token", async (ctx) => {
     token_type: 'Bearer',
     expires_in: 24 * 60 * 60,
     scope: "",
-  };
-});
-
-
-OpenApiDocument.registerOperation("/auth/me", "get", {
-  tags: ["auth"],
-  summary: "Retrieves the current user profile",
-  security: [{ "oauth": [] }],
-  responses: {
-    "200": {
-      description: "Successful response",
-    },
-  },
-});
-router.get("/me", requireUserAuth, async (ctx) => {
-  ctx.body = {
-    name: ctx.state.token.name,
-    pictureUrl: ctx.state.token.picture,
   };
 });
 

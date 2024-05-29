@@ -1,12 +1,12 @@
 import Router from "@koa/router";
-import OpenApiDocument from "../openapi.js";
+import { openApiDocument } from "../openapi.js";
 
 const router = new Router({
   prefix: "/v1",
 });
 
 router.get("/openapi.json", (ctx) => {
-  ctx.body = OpenApiDocument.document;
+  ctx.body = openApiDocument.document;
 });
 
 export default router;

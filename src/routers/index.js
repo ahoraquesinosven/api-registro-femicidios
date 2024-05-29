@@ -1,11 +1,11 @@
-import cases from "./cases.js";
 import auth from "./auth.js";
+import profiles from "./profiles.js";
 import feed from "./feed.js";
 import openapi from "./openapi.js";
 
 export default [
-  cases,
   auth,
+  profiles,
   feed,
-  openapi
+  openapi,
 ];
