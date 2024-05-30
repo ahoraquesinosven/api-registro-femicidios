@@ -23,19 +23,9 @@ export async function insertNewFeedItems(feedItems) {
     return;
   }
 
-  const itemKeys = feedItems.map(item => item.feedItemKey);
-  const existingItemKeys = await feedItemsTable()
-    .whereIn('feedItemKey', itemKeys)
-    .select('feedItemKey');
-
-  const existingItemKeysSet = new Set(existingItemKeys.map(x => x.feedItemKey));
-
-  const newItems = feedItems.filter(item => !existingItemKeysSet.has(item.feedItemKey));
-  if (newItems.length === 0) {
-    return;
-  }
-
-  await feedItemsTable().insert(newItems);
+  await feedItemsTable()
+    .insert(feedItems)
+    .onConflict("feedItemKey").ignore();
 }
 
 export function fetchFeedItems() {
