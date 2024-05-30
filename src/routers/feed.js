@@ -30,8 +30,8 @@ router.operation({
     }
 
     ctx.status = 200;
-  }]
-})
+  }],
+});
 
 router.operation({
   relativePath: "/items",
@@ -50,8 +50,20 @@ router.operation({
   handlers: [requireUserAuth, async (ctx) => {
     const items = await fetchFeedItems();
 
-    ctx.body = items;
-  }]
+    const result = items.map(x => ({
+      id: x.id,
+      feed: {
+        id: x.feedId,
+        name: x.feedName,
+        updatedAt: x.feedUpdatedAt,
+      },
+      publishedAt: x.publishedAt,
+      title: x.title,
+      link: x.link,
+    }));
+
+    ctx.body = result;
+  }],
 });
 
 export default router.nativeRouter;
