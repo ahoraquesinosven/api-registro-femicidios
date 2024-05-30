@@ -1,3 +1,4 @@
+import Router from "@koa/router";
 import config from "./config/values.js";
 
 class OpenApiDocument {
@@ -45,23 +46,29 @@ export const openApiDocument = new OpenApiDocument();
 
 export class OpenApiRouter {
   nativeRouter;
+  prefix;
 
-  constructor(nativeRouter) {
-    this.nativeRouter = nativeRouter;
+  constructor({prefix, ...opts}) {
+    this.prefix = prefix;
+    this.nativeRouter = new Router({
+      ...opts,
+      prefix,
+    });
   }
 
   operation(options) {
+    const pathForOpenApi = `${this.prefix}${options.relativePath}`;
+    const pathForRouter = options.relativePath.replaceAll(/{(\w+)}/g, (_, group) => `:${group}`);
     this.nativeRouter[options.method](
-      options.spec.operationId,
-      options.relativePath,
+      pathForRouter,
       ...options.handlers,
     );
+
     openApiDocument.registerOperation(
-      this.nativeRouter.url(options.spec.operationId),
+      pathForOpenApi,
       options.method,
       options.spec,
     );
   }
 }
-
 

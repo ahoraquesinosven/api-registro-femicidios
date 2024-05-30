@@ -2,10 +2,9 @@ import Router from "@koa/router";
 import {requireUserAuth} from "../middleware/auth.js";
 import {OpenApiRouter} from "../openapi.js";
 
-const router = new OpenApiRouter(new Router({
+const router = new OpenApiRouter({
   prefix: "/v1/profiles",
-}));
-
+});
 
 router.operation({
   relativePath: "/me",
@@ -13,7 +12,6 @@ router.operation({
   spec: {
     tags: ["auth"],
     summary: "Retrieves the current user profile",
-    operationId: 'v1AuthMe',
     security: [{"oauth": []}],
     responses: {
       "200": {
