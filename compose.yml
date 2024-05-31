@@ -14,16 +14,9 @@ services:
       - './migrations:/opt/project/migrations'
     ports:
       - '8080:8080'
-    environment:
-      - AUTH_GOOGLE_CLIENT_ID
-      - AUTH_GOOGLE_CLIENT_SECRET
-      - AUTH_PROVIDER_ACCEPTED_CLIENT_ID=1234
-      # - AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb
-      - AUTH_PROVIDER_REDIRECT_URI=http://localhost:8081/oauth2-redirect.html
-      - AUTH_PROVIDER_CODE_ENCRYPTION_SECRET=qM1Z5km9PF63E6uehLgJKztxpnhPE1Ag15Df1DwJrpY
-      - AUTH_INTERNAL_KEY=9876
-      - DB_CONNECTION_STRING=postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios
-      - SERVER_CANNONICAL_ORIGIN=http://localhost:8080
+    env_file:
+      - .env.defaults
+      - .env
 
   swagger-ui:
     image: swaggerapi/swagger-ui
