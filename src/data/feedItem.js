@@ -2,6 +2,23 @@ import knex from "../services/knex.js";
 
 const feedItemsTable = () => knex("feed_items");
 
+const feedItemsQuery = () => feedItemsTable()
+  .leftJoin("users", "feed_items.assignedUserId", "users.id")
+  .select({
+    id: "feed_items.id",
+    feedId: "feed_items.feedId",
+    feedName: "feed_items.feedName",
+    feedUpdatedAt: "feed_items.feedUpdatedAt",
+    publishedAt: "feed_items.publishedAt",
+    title: "feed_items.title",
+    link: "feed_items.link",
+    isDone: "feed_items.isDone",
+    assignedUserId: "feed_items.assignedUserId",
+    assignedUserName: "users.name",
+    assignedUserEmail: "users.email",
+    assignedUserPictureUrl: "users.pictureUrl",
+  });
+
 function removeHtmlTags(value) {
   return value.replace(/(<([^>]+)>)/ig, '');
 }
@@ -29,63 +46,47 @@ export async function insertNewFeedItems(feedItems) {
 }
 
 export function fetchFeedItems(status) {
-  let query = feedItemsTable()
-    .leftJoin("users", "feed_items.assignedUserId", "users.id");
+  let query = feedItemsQuery()
+    .orderBy("feed_items.publishedAt", "asc");
 
   switch (status) {
     case "backlog":
-      query = query
+      return query
         .whereNull("assignedUserId")
         .andWhere("isDone", false);
-      break;
     case "inProgress":
-      query = query
+      return query
         .whereNotNull("assignedUserId")
         .andWhere("isDone", false);
-      break
     case "done":
-      query = query
+      return query
         .where("isDone", true);
-      break;
+    default:
+      return query;
   }
-
-  return query.select({
-    id: "feed_items.id",
-    feedId: "feed_items.feedId",
-    feedName: "feed_items.feedName",
-    feedUpdatedAt: "feed_items.feedUpdatedAt",
-    publishedAt: "feed_items.publishedAt",
-    title: "feed_items.title",
-    link: "feed_items.link",
-    isDone: "feed_items.isDone",
-    assignedUserId: "feed_items.assignedUserId",
-    assignedUserName: "users.name",
-    assignedUserEmail: "users.email",
-    assignedUserPictureUrl: "users.pictureUrl",
-  });
 }
 
 export function assignFeedItem(id, userId) {
   return feedItemsTable()
-    .update({ assignedUserId: userId }, ["id"])
+    .update({assignedUserId: userId}, ["id"])
     .where({id});
 }
 
 export function unassignFeedItem(id) {
   return feedItemsTable()
-    .update({ assignedUserId: null }, ["id"])
+    .update({assignedUserId: null}, ["id"])
     .where({id});
 }
 
 export function completeFeedItem(id, assignedUserId) {
   return feedItemsTable()
-    .update({ isDone: true }, ["id"])
+    .update({isDone: true}, ["id"])
     .where({id, assignedUserId});
 }
 
 export function uncompleteFeedItem(id, assignedUserId) {
   return feedItemsTable()
-    .update({ isDone: false }, ["id"])
+    .update({isDone: false}, ["id"])
     .where({id, assignedUserId});
 }
 
