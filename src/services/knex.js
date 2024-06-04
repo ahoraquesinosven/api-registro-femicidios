@@ -1,6 +1,7 @@
 import Knex from "knex";
+import config from '../config';
 
 export default new Knex({
   client: 'pg',
-  connection: "postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios",
+  connection: config.db.connectionString,
 });

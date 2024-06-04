@@ -1,17 +1,22 @@
 # api-registro-femicidios
-API to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.
+
+API to track femicides by the Observatorio de las Violencias de Género “Ahora
+Que Sí Nos Ven”.
 
 API set up using [PostgreSQL](https://www.postgresql.org/) as a database.
 
 ## Development
 
-### Prerequisites
+We use a dockerized development environment, so you will need
+[docker](https://www.docker.com/) on your machine. No other dependencies are
+required in your machine.
 
-We use a dockerized development environment, so you will need [docker](https://www.docker.com/) on your machine and also [docker-compose](https://docs.docker.com/compose/install/). No other dependencies are required in your machine.
+First, run `docker compose run --rm api npm run config:template`. This process
+will guide you through setting up your local `.env` file with all settings
+properly set up.
 
-### Quick start
-
-* Run `docker compose up`. This will take a bit the first time since the docker images need to be built or downloaded. Once done, the strapi admin console can be accessed at  
+Once you've set up your local `.env` file, you can run `docker compose up` to
+start the application locally
 
 ## License
 

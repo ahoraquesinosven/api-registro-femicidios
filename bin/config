@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+
+import config from '../src/config/definition.js';
+
+const processConfigNode = (configNode) => {
+  if ("envKey" in configNode) {
+    if (configNode.required && !process.env[configNode.envKey] && !configNode.defaultValue) {
+      console.log(`# ${configNode.doc}`);
+      console.log(`${configNode.envKey}=`);
+    }
+  } else {
+    for (const entry in configNode) {
+      processConfigNode(configNode[entry]);
+    }
+  }
+}
+
+console.log(`
+################################################################################
+Create an .env file in the repository root and add the following lines to it.
+Follow the documentation to complete your env file. If you already have an .env
+file, add the following lines to it. If nothing is printed, your environment is 
+already set up with everything needed
+################################################################################
+`);
+
+processConfigNode(config);
