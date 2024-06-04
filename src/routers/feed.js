@@ -1,5 +1,5 @@
 import {fetchAllRssFeeds} from "../services/google/alerts.js";
-import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem} from "../data/feedItem.js";
+import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems} from "../data/feedItem.js";
 import {requireServerAuth, requireUserAuth} from "../middleware/auth.js";
 import {OpenApiRouter} from "../openapi.js";
 
@@ -48,6 +48,23 @@ router.operation({
           enum: ["backlog", "inProgress", "done"],
         },
       },
+      {
+        name: "limit",
+        in: "query",
+        description: "Maximum amount of results to return",
+        schema: {
+          type: "integer",
+          minimum: 0,
+        }
+      },
+      {
+        name: "start",
+        in: "query",
+        description: "Maximum amount of results to return",
+        schema: {
+          type: "string",
+        }
+      },
     ],
     responses: {
       "200": {
@@ -56,27 +73,36 @@ router.operation({
     },
   },
   handlers: [requireUserAuth, async (ctx) => {
-    const items = await fetchFeedItems(ctx.request.query.status);
+    const {status, limit, start} = ctx.request.query;
 
-    const result = items.map(x => ({
-      id: x.id,
-      feed: {
-        id: x.feedId,
-        name: x.feedName,
-        updatedAt: x.feedUpdatedAt,
-      },
-      publishedAt: x.publishedAt,
-      title: x.title,
-      link: x.link,
-      isDone: x.isDone,
-      assignedUser: x.assignedUserId ? {
-        name: x.assignedUserName,
-        email: x.assignedUserEmail,
-        pictureUrl: x.assignedUserPictureUrl,
-      } : null,
-    }));
+    const [items, count] = await Promise.all([
+      fetchFeedItems({status, limit, start}),
+      countFeedItems(status),
+    ]);
 
-    ctx.body = result;
+    ctx.body = {
+      limit: parseInt(limit),
+      total: parseInt(count),
+      start,
+      next: items.length > 0 && items[items.length - 1].publishedAt,
+      page: items.map(x => ({
+        id: x.id,
+        feed: {
+          id: x.feedId,
+          name: x.feedName,
+          updatedAt: x.feedUpdatedAt,
+        },
+        publishedAt: x.publishedAt,
+        title: x.title,
+        link: x.link,
+        isDone: x.isDone,
+        assignedUser: x.assignedUserId ? {
+          name: x.assignedUserName,
+          email: x.assignedUserEmail,
+          pictureUrl: x.assignedUserPictureUrl,
+        } : null,
+      }))
+    };
   }],
 });
 

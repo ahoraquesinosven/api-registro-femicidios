@@ -1,23 +1,41 @@
 import knex from "../services/knex.js";
 
-const feedItemsTable = () => knex("feed_items");
+const feedItemsTable = () => knex("feedItems");
 
 const feedItemsQuery = () => feedItemsTable()
-  .leftJoin("users", "feed_items.assignedUserId", "users.id")
+  .leftJoin("users", "feedItems.assignedUserId", "users.id")
   .select({
-    id: "feed_items.id",
-    feedId: "feed_items.feedId",
-    feedName: "feed_items.feedName",
-    feedUpdatedAt: "feed_items.feedUpdatedAt",
-    publishedAt: "feed_items.publishedAt",
-    title: "feed_items.title",
-    link: "feed_items.link",
-    isDone: "feed_items.isDone",
-    assignedUserId: "feed_items.assignedUserId",
+    id: "feedItems.id",
+    feedId: "feedItems.feedId",
+    feedName: "feedItems.feedName",
+    feedUpdatedAt: "feedItems.feedUpdatedAt",
+    publishedAt: "feedItems.publishedAt",
+    title: "feedItems.title",
+    link: "feedItems.link",
+    isDone: "feedItems.isDone",
+    assignedUserId: "feedItems.assignedUserId",
     assignedUserName: "users.name",
     assignedUserEmail: "users.email",
     assignedUserPictureUrl: "users.pictureUrl",
   });
+
+const applyStatusFilter = (query, status) => {
+  switch (status) {
+    case "backlog":
+      return query
+        .whereNull("assignedUserId")
+        .andWhere("isDone", false);
+    case "inProgress":
+      return query
+        .whereNotNull("assignedUserId")
+        .andWhere("isDone", false);
+    case "done":
+      return query
+        .where("isDone", true);
+    default:
+      return query;
+  }
+}
 
 function removeHtmlTags(value) {
   return value.replace(/(<([^>]+)>)/ig, '');
@@ -45,25 +63,29 @@ export async function insertNewFeedItems(feedItems) {
     .onConflict("feedItemKey").ignore();
 }
 
-export function fetchFeedItems(status) {
-  let query = feedItemsQuery()
-    .orderBy("feed_items.publishedAt", "asc");
+export function fetchFeedItems({ status, limit, start }) {
+  const baseQuery = feedItemsQuery()
+    .orderBy("feedItems.publishedAt", "asc");
 
-  switch (status) {
-    case "backlog":
-      return query
-        .whereNull("assignedUserId")
-        .andWhere("isDone", false);
-    case "inProgress":
-      return query
-        .whereNotNull("assignedUserId")
-        .andWhere("isDone", false);
-    case "done":
-      return query
-        .where("isDone", true);
-    default:
-      return query;
+  if (limit) {
+    baseQuery.limit(limit);
   }
+
+  if (start) {
+    baseQuery.where("feedItems.publishedAt", ">", start);
+  }
+
+  return applyStatusFilter(baseQuery, status);
+}
+
+export async function countFeedItems(status) {
+  const baseQuery = feedItemsTable()
+    .count({count: "id"});
+
+  const result = await applyStatusFilter(baseQuery, status)
+    .first();
+
+  return result.count;
 }
 
 export function assignFeedItem(id, userId) {

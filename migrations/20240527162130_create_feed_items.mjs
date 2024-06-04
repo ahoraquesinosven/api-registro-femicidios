@@ -1,5 +1,5 @@
 export const up = async (knex) => {
-  return knex.schema.withSchema("public").createTable("feed_items", (table) => {
+  return knex.schema.withSchema("public").createTable("feedItems", (table) => {
     table.increments("id");
     table.specificType("feedId", "varchar").notNullable();
     table.specificType("feedName", "varchar").notNullable();
@@ -16,5 +16,5 @@ export const up = async (knex) => {
 };
 
 export const down = async (knex) => {
-  return knex.schema.withSchema("public").dropTable("feed_items");
+  return knex.schema.withSchema("public").dropTable("feedItems");
 };
