@@ -1,4 +1,4 @@
-import config from 'src/config/values.js';
+import config from './src/config/values.js';
 
 export default {
   client: 'pg',

@@ -12,6 +12,7 @@ export default {
       doc: "Cannonical origin for the server, used to compose absolute URL's in some endpoints. Ex: http://localhost:8080",
     }),
   },
+
   auth: {
     google: {
       clientId: entry({
@@ -41,6 +42,13 @@ export default {
       authCodeEncryptionSecret: entry({
         envKey: "AUTH_PROVIDER_CODE_ENCRYPTION_SECRET",
         doc: "Encryption key for encrypting authorization codes."
+      }),
+    },
+
+    internal: {
+      key: entry({
+        envKey: "AUTH_INTERNAL_KEY",
+        doc: "Base64-encoded user:password pair, as defined by RFC7617"
       }),
     },
   },

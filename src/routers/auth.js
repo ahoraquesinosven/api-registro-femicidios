@@ -1,8 +1,9 @@
 import Router from "@koa/router";
 import config from '../config/values.js';
-import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google.js';
+import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google/openid.js';
 import {createPKCEPair, createXSRFToken} from "../lib/crypto.js";
 import {authorizationRequest, tokenRequest} from "../lib/oauth.js";
+import { upsertUser } from "../data/user.js";
 
 const router = new Router({
   prefix: "/auth",
@@ -99,41 +100,28 @@ router.post("token", "/token", async (ctx) => {
     return;
   }
 
-  const token = await tokenRequest.createAccessToken({
-    gid: googleToken.sub,
-    email: googleToken.email,
+  const user = await upsertUser({
+    provider: "google",
+    providerId: googleToken.sub,
     name: googleToken.name,
-    picture: googleToken.picture,
+    email: googleToken.email,
+    pictureUrl: googleToken.picture,
+  });
+
+  const token = await tokenRequest.createAccessToken({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    picture: user.pictureUrl,
   });
 
   ctx.status = 200;
-  ctx.body = token;
-});
-
-router.get("user", "/me", async (ctx) => {
-  const authorization = ctx.request.headers["authorization"];
-  if (!authorization) {
-    ctx.status = 401;
-    return;
-  }
-
-  const parsedAuthorization = authorization.match(/bearer (\S*)/i);
-  if (!parsedAuthorization) {
-    ctx.status = 401;
-    return;
-  }
-
-  const token = parsedAuthorization[1];
-  try {
-    const payload = await tokenRequest.verifyAccessToken(token);
-
-    ctx.body = {
-      name: payload.name,
-      pictureUrl: payload.picture,
-    };
-  } catch (e) {
-    ctx.status = 401;
-  }
+  ctx.body = {
+    access_token: token,
+    token_type: 'Bearer',
+    expires_in: 24 * 60 * 60,
+    scope: "",
+  };
 });
 
 export default router;
