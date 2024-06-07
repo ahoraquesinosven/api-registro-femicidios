@@ -1,13 +1,13 @@
 {
   "name": "api-registro-femicidios",
   "version": "1.0.0",
-  "description": "API to track femicides by the Observatorio de las Violencias de Género “Ahora Que Sí Nos Ven”.",
+  "description": "API to track femicides by the Observatorio de las Violencias de Género \"Ahora Que Sí Nos Ven\".",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "config:template": "./bin/config"
+    "config:template": "./bin/config",
+    "start:dev": "node --watch-path=./src src/index.js",
+    "start:prod": "node src/index.js"
   },
   "repository": {
     "type": "git",
@@ -29,8 +29,5 @@
     "koa": "^2.13.0",
     "pg": "^8.5.1",
     "rss-parser": "^3.13.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
   }
 }

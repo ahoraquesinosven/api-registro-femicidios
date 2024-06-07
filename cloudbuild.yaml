@@ -1,0 +1,54 @@
+substitutions:
+  _SERVICE_NAME: api-registro
+
+steps:
+  # Build the production docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA', '.']
+
+  # Push the docker image to GCR
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA' ]
+
+  # Deploy admin tools to the cloud run job
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'run', 'jobs', 'deploy', '${_SERVICE_NAME}-$SHORT_SHA',
+      '--region', 'us-central1',
+      '--image', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA',
+      '--set-env-vars', 'SERVER_CANNONICAL_ORIGIN=${_SERVER_CANNONICAL_ORIGIN}',
+      '--set-env-vars', 'AUTH_GOOGLE_CLIENT_ID=${_AUTH_GOOGLE_CLIENT_ID}',
+      '--set-env-vars', 'AUTH_GOOGLE_CLIENT_SECRET=${_AUTH_GOOGLE_CLIENT_SECRET}',
+      '--set-env-vars', 'AUTH_PROVIDER_ACCEPTED_CLIENT_ID=${_AUTH_PROVIDER_ACCEPTED_CLIENT_ID}',
+      '--set-env-vars', 'AUTH_PROVIDER_REDIRECT_URI=${_AUTH_PROVIDER_REDIRECT_URI}',
+      '--set-env-vars', 'AUTH_PROVIDER_CODE_ENCRYPTION_SECRET=${_AUTH_PROVIDER_CODE_ENCRYPTION_SECRET}',
+      '--set-env-vars', 'AUTH_INTERNAL_KEY=${_AUTH_INTERNAL_KEY}',
+      '--set-env-vars', 'DB_CONNECTION_STRING=${_DB_CONNECTION_STRING}',
+      '--set-cloudsql-instances', '${_CLOUD_SQL_INSTANCE}',
+    ]
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'run', 'jobs', 'execute', '${_SERVICE_NAME}-$SHORT_SHA',
+      '--args', "node_modules/.bin/knex,migrate:latest",
+      '--region', 'us-central1',
+      '--wait',
+    ]
+
+  # Deploy to cloud run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: [
+      'run', 'deploy', '${_SERVICE_NAME}',
+      '--region', 'us-central1',
+      '--image', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA',
+      '--allow-unauthenticated',
+      '--set-env-vars', 'SERVER_CANNONICAL_ORIGIN=${_SERVER_CANNONICAL_ORIGIN}',
+      '--set-env-vars', 'AUTH_GOOGLE_CLIENT_ID=${_AUTH_GOOGLE_CLIENT_ID}',
+      '--set-env-vars', 'AUTH_GOOGLE_CLIENT_SECRET=${_AUTH_GOOGLE_CLIENT_SECRET}',
+      '--set-env-vars', 'AUTH_PROVIDER_ACCEPTED_CLIENT_ID=${_AUTH_PROVIDER_ACCEPTED_CLIENT_ID}',
+      '--set-env-vars', 'AUTH_PROVIDER_REDIRECT_URI=${_AUTH_PROVIDER_REDIRECT_URI}',
+      '--set-env-vars', 'AUTH_PROVIDER_CODE_ENCRYPTION_SECRET=${_AUTH_PROVIDER_CODE_ENCRYPTION_SECRET}',
+      '--set-env-vars', 'AUTH_INTERNAL_KEY=${_AUTH_INTERNAL_KEY}',
+      '--set-env-vars', 'DB_CONNECTION_STRING=${_DB_CONNECTION_STRING}',
+      '--set-cloudsql-instances', '${_CLOUD_SQL_INSTANCE}',
+    ]

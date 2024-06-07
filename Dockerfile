@@ -7,9 +7,6 @@ FROM node:20 AS dependencies
 RUN mkdir -p /opt/project
 WORKDIR /opt/project
 
-# Setup default command
-CMD ["npm", "start"]
-
 # Force environment to production
 ENV NODE_ENV=production
 
@@ -31,6 +28,9 @@ FROM dependencies AS development
 ENV NODE_ENV=development
 ENV PATH=./node_modules/.bin:$PATH
 
+# Default command
+CMD ["npm", "run", "start:dev"]
+
 # Setup development dependencies
 RUN npm --unsafe-perm install --only development --loglevel verbose
 
@@ -42,3 +42,5 @@ COPY spec /opt/project/spec
 ################################################################################
 FROM dependencies AS production
 
+# Default command
+CMD ["npm", "run", "start:prod"]
