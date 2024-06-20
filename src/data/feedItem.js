@@ -41,6 +41,15 @@ function removeHtmlTags(value) {
   return value.replace(/(<([^>]+)>)/ig, '');
 }
 
+export function extractUrlFromGoogleUrl(link) {
+  const url = new URL(link);
+  if (url.host === "www.google.com" && url.pathname === "/url" && url.searchParams.has("url")) {
+    return url.searchParams.get("url");
+  }
+
+  return link;
+}
+
 export function feedItemFromRss(rssFeed, rssItem) {
   return {
     feedId: rssFeed.link,
@@ -49,7 +58,7 @@ export function feedItemFromRss(rssFeed, rssItem) {
     publishedAt: rssItem.pubDate,
     feedItemKey: rssItem.id,
     title: removeHtmlTags(rssItem.title),
-    link: rssItem.link
+    link: extractUrlFromGoogleUrl(rssItem.link),
   };
 }
 
@@ -60,7 +69,7 @@ export async function insertNewFeedItems(feedItems) {
 
   await feedItemsTable()
     .insert(feedItems)
-    .onConflict("feedItemKey").ignore();
+    .onConflict().ignore();
 }
 
 export function fetchFeedItems({ status, limit, start }) {
