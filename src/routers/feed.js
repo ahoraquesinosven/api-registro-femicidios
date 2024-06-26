@@ -84,7 +84,7 @@ router.operation({
       limit: parseInt(limit),
       total: parseInt(count),
       start,
-      next: items.length > 0 && items[items.length - 1].publishedAt,
+      next: items.length > 0 ? items[items.length - 1].publishedAt : null,
       page: items.map(x => ({
         id: x.id,
         feed: {
