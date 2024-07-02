@@ -18,6 +18,8 @@ properly set up.
 Once you've set up your local `.env` file, you can run `docker compose up` to
 start the application locally
 
+Once your image is running, run migrations via `docker compose run api node_modules/.bin/knex migrate:latest`
+
 ## License
 
 See the [LICENSE](./LICENSE) file for license rights and limitations (MIT).
