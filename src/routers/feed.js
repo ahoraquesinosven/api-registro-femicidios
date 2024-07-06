@@ -95,6 +95,7 @@ router.operation({
         publishedAt: x.publishedAt,
         title: x.title,
         link: x.link,
+        contentSnippet: x.snippet,
         isDone: x.isDone,
         assignedUser: x.assignedUserId ? {
           name: x.assignedUserName,
