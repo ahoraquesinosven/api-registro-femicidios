@@ -128,3 +128,8 @@ export function markIrrelevantFeedItem(id, userId) {
     .where({id});
 }
 
+export function unmarkIrrelevantFeedItem(id) {
+  return feedItemsTable()
+    .update({isDone: false, isIrrelevant: false, assignedUserId: null}, ["id"])
+    .where({id});
+}

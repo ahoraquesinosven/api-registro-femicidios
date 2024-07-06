@@ -1,5 +1,5 @@
 import {fetchAllRssFeeds} from "../services/google/alerts.js";
-import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems, markIrrelevantFeedItem} from "../data/feedItem.js";
+import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems, markIrrelevantFeedItem, unmarkIrrelevantFeedItem} from "../data/feedItem.js";
 import {requireServerAuth, requireUserAuth} from "../middleware/auth.js";
 import {OpenApiRouter} from "../openapi.js";
 
@@ -306,5 +306,45 @@ router.operation({
 
   }],
 });
+
+router.operation({
+  relativePath: "/items/{feedItemId}/irrelevant",
+  method: "delete",
+  spec: {
+    tags: ["feed"],
+    summary: "Removes the flag irrelevant for a given feed item",
+    security: [{"oauth": []}],
+    parameters: [
+      {
+        name: "feedItemId",
+        in: "path",
+        description: "Feed item to remove irrelevant flag",
+        required: true,
+        schema: {
+          type: "integer",
+        },
+      },
+    ],
+    responses: {
+      "200": {
+        description: "Successful response",
+      },
+    },
+  },
+  handlers: [requireUserAuth, async (ctx) => {
+    const updatedFeedItems = await unmarkIrrelevantFeedItem(
+      ctx.params.feedItemId,
+    );
+
+    if (updatedFeedItems.length === 0) {
+      ctx.status = 422;
+      return;
+    }
+
+    ctx.status = 200;
+
+  }],
+});
+
 
 export default router.nativeRouter;
