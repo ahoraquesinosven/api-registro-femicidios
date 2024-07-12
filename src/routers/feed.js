@@ -1,5 +1,5 @@
 import {fetchAllRssFeeds} from "../services/google/alerts.js";
-import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems} from "../data/feedItem.js";
+import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems, markIrrelevantFeedItem, unmarkIrrelevantFeedItem} from "../data/feedItem.js";
 import {requireServerAuth, requireUserAuth} from "../middleware/auth.js";
 import {OpenApiRouter} from "../openapi.js";
 
@@ -96,6 +96,7 @@ router.operation({
         title: x.title,
         link: x.link,
         isDone: x.isDone,
+        isIrrelevant: x.isIrrelevant,
         assignedUser: x.assignedUserId ? {
           name: x.assignedUserName,
           email: x.assignedUserEmail,
@@ -265,5 +266,85 @@ router.operation({
 
   }],
 });
+
+router.operation({
+  relativePath: "/items/{feedItemId}/irrelevant",
+  method: "post",
+  spec: {
+    tags: ["feed"],
+    summary: "Mark a single feed item as irrelevant and assign to current user",
+    security: [{"oauth": []}],
+    parameters: [
+      {
+        name: "feedItemId",
+        in: "path",
+        description: "Feed item to mark as irrelevant",
+        required: true,
+        schema: {
+          type: "integer",
+        },
+      },
+    ],
+    responses: {
+      "204": {
+        description: "Successful response",
+      },
+    },
+  },
+  handlers: [requireUserAuth, async (ctx) => {
+    const updatedFeedItems = await markIrrelevantFeedItem(
+      ctx.params.feedItemId,
+      ctx.state.token.id
+    );
+
+    if (updatedFeedItems.length === 0) {
+      ctx.status = 422;
+      return;
+    }
+
+    ctx.status = 204;
+
+  }],
+});
+
+router.operation({
+  relativePath: "/items/{feedItemId}/irrelevant",
+  method: "delete",
+  spec: {
+    tags: ["feed"],
+    summary: "Removes the flag irrelevant for a given feed item",
+    security: [{"oauth": []}],
+    parameters: [
+      {
+        name: "feedItemId",
+        in: "path",
+        description: "Feed item to remove irrelevant flag",
+        required: true,
+        schema: {
+          type: "integer",
+        },
+      },
+    ],
+    responses: {
+      "200": {
+        description: "Successful response",
+      },
+    },
+  },
+  handlers: [requireUserAuth, async (ctx) => {
+    const updatedFeedItems = await unmarkIrrelevantFeedItem(
+      ctx.params.feedItemId,
+    );
+
+    if (updatedFeedItems.length === 0) {
+      ctx.status = 422;
+      return;
+    }
+
+    ctx.status = 200;
+
+  }],
+});
+
 
 export default router.nativeRouter;

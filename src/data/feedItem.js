@@ -13,6 +13,7 @@ const feedItemsQuery = () => feedItemsTable()
     title: "feedItems.title",
     link: "feedItems.link",
     isDone: "feedItems.isDone",
+    isIrrelevant: "feedItems.isIrrelevant",
     assignedUserId: "feedItems.assignedUserId",
     assignedUserName: "users.name",
     assignedUserEmail: "users.email",
@@ -121,3 +122,14 @@ export function uncompleteFeedItem(id, assignedUserId) {
     .where({id, assignedUserId});
 }
 
+export function markIrrelevantFeedItem(id, userId) {
+  return feedItemsTable()
+    .update({isDone:true, isIrrelevant: true, assignedUserId: userId}, ["id"])
+    .where({id});
+}
+
+export function unmarkIrrelevantFeedItem(id) {
+  return feedItemsTable()
+    .update({isDone: false, isIrrelevant: false, assignedUserId: null}, ["id"])
+    .where({id});
+}
