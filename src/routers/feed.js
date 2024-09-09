@@ -60,7 +60,7 @@ router.operation({
       {
         name: "start",
         in: "query",
-        description: "Maximum amount of results to return",
+        description: "Cursor as returned on the `next` property of a previous request to this endpoint",
         schema: {
           type: "string",
         }
@@ -84,8 +84,8 @@ router.operation({
       limit: parseInt(limit),
       total: parseInt(count),
       start,
-      next: items.length > 0 ? items[items.length - 1].publishedAt : null,
-      page: items.map(x => ({
+      next: items.cursor,
+      page: items.result.map(x => ({
         id: x.id,
         feed: {
           id: x.feedId,

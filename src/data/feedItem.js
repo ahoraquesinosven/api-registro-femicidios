@@ -6,6 +6,8 @@ const feedItemsQuery = () => feedItemsTable()
   .leftJoin("users", "feedItems.assignedUserId", "users.id")
   .select({
     id: "feedItems.id",
+    createdAt: "feedItems.createdAt",
+    updatedAt: "feedItems.updatedAt",
     feedId: "feedItems.feedId",
     feedName: "feedItems.feedName",
     feedUpdatedAt: "feedItems.feedUpdatedAt",
@@ -73,19 +75,44 @@ export async function insertNewFeedItems(feedItems) {
     .onConflict().ignore();
 }
 
-export function fetchFeedItems({ status, limit, start }) {
+const feedItemsSortCriteria = {
+  backlog: {
+    field: "publishedAt",
+    order: "asc",
+    operator: ">",
+  },
+  inProgress: {
+    field: "updatedAt",
+    order: "desc",
+    operator: "<",
+  },
+  done: {
+    field: "updatedAt",
+    order: "desc",
+    operator: "<",
+  },
+};
+
+export async function fetchFeedItems({ status, limit, start }) {
+  const sortCriteria = feedItemsSortCriteria[status];
+
   const baseQuery = feedItemsQuery()
-    .orderBy("feedItems.publishedAt", "asc");
+    .orderBy(`feedItems.${sortCriteria.field}`, sortCriteria.order);
 
   if (limit) {
     baseQuery.limit(limit);
   }
 
   if (start) {
-    baseQuery.where("feedItems.publishedAt", ">", start);
+    baseQuery.where(`feedItems.${sortCriteria.field}`, sortCriteria.operator, start);
   }
 
-  return applyStatusFilter(baseQuery, status);
+  const records = await applyStatusFilter(baseQuery, status);
+
+  return {
+    result: records,
+    cursor: records.length > 0 ? records[records.length - 1][sortCriteria.field] : null,
+  };
 }
 
 export async function countFeedItems(status) {
@@ -100,36 +127,36 @@ export async function countFeedItems(status) {
 
 export function assignFeedItem(id, userId) {
   return feedItemsTable()
-    .update({assignedUserId: userId}, ["id"])
+    .update({assignedUserId: userId, updatedAt: new Date()}, ["id"])
     .where({id});
 }
 
 export function unassignFeedItem(id) {
   return feedItemsTable()
-    .update({assignedUserId: null}, ["id"])
+    .update({assignedUserId: null, updatedAt: new Date()}, ["id"])
     .where({id});
 }
 
 export function completeFeedItem(id, assignedUserId) {
   return feedItemsTable()
-    .update({isDone: true}, ["id"])
+    .update({isDone: true, updatedAt: new Date()}, ["id"])
     .where({id, assignedUserId});
 }
 
 export function uncompleteFeedItem(id, assignedUserId) {
   return feedItemsTable()
-    .update({isDone: false}, ["id"])
+    .update({isDone: false, updatedAt: new Date()}, ["id"])
     .where({id, assignedUserId});
 }
 
 export function markIrrelevantFeedItem(id, userId) {
   return feedItemsTable()
-    .update({isDone:true, isIrrelevant: true, assignedUserId: userId}, ["id"])
+    .update({isDone:true, isIrrelevant: true, assignedUserId: userId, updatedAt: new Date()}, ["id"])
     .where({id});
 }
 
 export function unmarkIrrelevantFeedItem(id) {
   return feedItemsTable()
-    .update({isDone: false, isIrrelevant: false, assignedUserId: null}, ["id"])
+    .update({isDone: false, isIrrelevant: false, assignedUserId: null, updatedAt: new Date()}, ["id"])
     .where({id});
 }
