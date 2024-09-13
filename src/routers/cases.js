@@ -1,6 +1,6 @@
 import { OpenApiRouter } from "../openapi.js";
-import { requireServerAuth } from "../middleware/auth.js";
-import knex from "knex";
+import { requireUserAuth } from "../middleware/auth.js";
+import knex from "../services/knex.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/case",
@@ -91,76 +91,72 @@ router.operation({
     },
   },
   handlers: [
-    requireServerAuth,
+    requireUserAuth,
     async (ctx) => {
       const { victim, aggresor, case: caseData } = ctx.request.body;
 
-      try {
-        await knex.transaction(async (trx) => {
-          const victimId = await trx("victims")
-            .insert({
-              victim_name_lastname: victim.victim_name_lastname,
-              victim_age: victim.victim_age,
-              victim_nationality: victim.victim_nationality,
-              victim_prostitution: victim.victim_prostitution,
-              victim_missing: victim.victim_missing,
-              victim_native_people: victim.victim_native_people,
-              victim_pregnant: victim.victim_pregnant,
-              victim_disabillity: victim.victim_disabillity,
-              victim_ocupation: victim.victim_ocupation,
-              victim_children: victim.victim_children,
-              victim_creation: trx.fn.now(),
-              victim_last_update: trx.fn.now(),
-            })
-            .returning("victim_id");
+      console.log("Este es el body");
+      console.log(ctx.request.body);
 
-          const aggresorId = await trx("aggresors")
-            .insert({
-              aggresor_name_lastname: aggresor.aggresor_name_lastname,
-              aggresor_gender: aggresor.aggresor_gender,
-              aggresor_age: aggresor.aggresor_age,
-              aggresor_legal_complaint_history: aggresor.aggresor_legal_complaint_history,
-              aggresor_cases_history: aggresor.aggresor_cases_history,
-              aggresor_captive_history: aggresor.aggresor_captive_history,
-              aggresor_behaviour_post_case: aggresor.aggresor_behaviour_post_case,
-              aggresor_creation: trx.fn.now(),
-              aggresor_last_update: trx.fn.now(),
-            })
-            .returning("aggresor_id");
+      await knex.transaction(async (trx) => {
+        const [{victim_id}] = await trx("victims")
+          .insert({
+            victim_name_lastname: victim.victim_name_lastname,
+            victim_age: victim.victim_age,
+            victim_nationality: victim.victim_nationality,
+            victim_prostitution: victim.victim_prostitution,
+            victim_missing: victim.victim_missing,
+            victim_native_people: victim.victim_native_people,
+            victim_pregnant: victim.victim_pregnant,
+            victim_disabillity: victim.victim_disabillity,
+            victim_ocupation: victim.victim_ocupation,
+            victim_children: victim.victim_children,
+            victim_creation: trx.fn.now(),
+            victim_last_update: trx.fn.now(),
+          })
+          .returning("victim_id");
 
-          await trx("cases").insert({
-            victim_id: victimId,
-            aggresor_id: aggresorId,
-            incident_date: caseData.incident_date,
-            case_day_moment: caseData.case_day_moment,
-            case_type: caseData.case_type,
-            case_gender: caseData.case_gender,
-            case_province: caseData.case_province,
-            case_location: caseData.case_location,
-            case_geographic_ubication: caseData.case_geographic_ubication,
-            case_place: caseData.case_place,
-            case_form: caseData.case_form,
-            case_justice: caseData.case_justice,
-            case_legal_complaints: caseData.case_legal_complaints,
-            case_rape: caseData.case_rape,
-            case_organized_crime: caseData.case_organized_crime,
-            case_organized_crime_notes: caseData.case_organized_crime_notes,
-            case_notes: caseData.case_notes,
-            case_news_links: caseData.case_news_links,
-            case_creation: trx.fn.now(),
-            last_update: trx.fn.now(),
-          });
+        console.log(victim_id);
 
-          await trx.commit();
+        const [{aggresor_id}] = await trx("aggresors")
+          .insert({
+            aggresor_name_lastname: aggresor.aggresor_name_lastname,
+            aggresor_gender: aggresor.aggresor_gender,
+            aggresor_age: aggresor.aggresor_age,
+            aggresor_legal_complaint_history: aggresor.aggresor_legal_complaint_history,
+            aggresor_cases_history: aggresor.aggresor_cases_history,
+            aggresor_captive_history: aggresor.aggresor_captive_history,
+            aggresor_behaviour_post_case: aggresor.aggresor_behaviour_post_case,
+            aggresor_creation: trx.fn.now(),
+            aggresor_last_update: trx.fn.now(),
+          })
+          .returning("aggresor_id");
+
+        await trx("cases").insert({
+          victim_id: victim_id,
+          aggresor_id: aggresor_id,
+          incident_date: caseData.incident_date,
+          case_day_moment: caseData.case_day_moment,
+          case_type: caseData.case_type,
+          case_gender: caseData.case_gender,
+          case_province: caseData.case_province,
+          case_location: caseData.case_location,
+          case_geographic_ubication: caseData.case_geographic_ubication,
+          case_place: caseData.case_place,
+          case_form: caseData.case_form,
+          case_justice: caseData.case_justice,
+          case_legal_complaints: caseData.case_legal_complaints,
+          case_rape: caseData.case_rape,
+          case_organized_crime: caseData.case_organized_crime,
+          case_organized_crime_notes: caseData.case_organized_crime_notes,
+          case_notes: caseData.case_notes,
+          case_news_links: caseData.case_news_links,
+          case_creation: trx.fn.now(),
+          last_update: trx.fn.now(),
         });
+      });
 
-        ctx.status = 201;
-        ctx.body = { message: "Data inserted successfully" };
-
-      } catch (error) {
-        ctx.status = 500;
-        ctx.body = { message: "Error", error: error.message };
-      }
+      ctx.status = 203;
     },
   ],
 });
@@ -256,7 +252,7 @@ router.operation({
     },
   },
   handlers: [
-    requireServerAuth,
+    requireUserAuth,
     async (ctx) => {
       const { case_id } = ctx.params;
 
@@ -293,4 +289,4 @@ router.operation({
 });
 
 
-export default router;
+export default router.nativeRouter;
