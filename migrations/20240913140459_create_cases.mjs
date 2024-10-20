@@ -2,8 +2,8 @@ export const up = async (knex) => {
     return knex.schema.withSchema('public')
         .createTable('victims', (table) => {
             table.increments('victim_id', { primaryKey: true }).notNullable();
-            table.date('victim_creation').defaultTo(knex.fn.now());
-            table.date('victim_last_update').defaultTo(knex.fn.now());
+            table.date('victim_creation').defaultTo(knex.fn.now()).notNullable();
+            table.date('victim_last_update').defaultTo(knex.fn.now()).notNullable();
             table.specificType('victim_name_lastname', 'character varying');
             table.integer('victim_age');
             table.string('victim_nationality', 3); 
@@ -17,8 +17,8 @@ export const up = async (knex) => {
         })
         .createTable('aggresors', (table) => {
             table.increments('aggresor_id', { primaryKey: true }).notNullable();
-            table.date('aggresor_creation').defaultTo(knex.fn.now());
-            table.date('aggresor_last_update').defaultTo(knex.fn.now());
+            table.date('aggresor_creation').defaultTo(knex.fn.now()).notNullable();
+            table.date('aggresor_last_update').defaultTo(knex.fn.now()).notNullable();
             table.specificType('aggresor_gender', 'character varying');
             table.specificType('aggresor_name_lastname', 'character varying');
             table.integer('aggresor_age');
@@ -29,12 +29,10 @@ export const up = async (knex) => {
          })
         .createTable('cases', (table) => {
             table.increments('case_id', { primaryKey: true }).notNullable();
-            table.integer('victim_id')
-            table.foreign('victim_id').references('victims.victim_id');
-            table.integer('aggresor_id');
-            table.foreign('aggresor_id').references('aggresors.aggresor_id');
-            table.date('case_creation');
-            table.date('last_update');
+            table.integer('victim_id').notNullable();
+            table.integer('aggresor_id').notNullable();
+            table.date('case_creation').defaultTo(knex.fn.now()).notNullable();
+            table.date('last_update').defaultTo(knex.fn.now()).notNullable();
             table.date('incident_date');
             table.specificType('case_day_moment', 'character varying');
             table.specificType('case_type', 'character varying');
@@ -51,6 +49,9 @@ export const up = async (knex) => {
             table.text('case_organized_crime_notes');
             table.text('case_notes');
             table.specificType('case_news_links', 'text ARRAY');
+
+            table.foreign('victim_id').references('victims.victim_id');
+            table.foreign('aggresor_id').references('aggresors.aggresor_id');
         });
 };
 

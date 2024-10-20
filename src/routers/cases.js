@@ -99,7 +99,7 @@ router.operation({
       console.log(ctx.request.body);
 
       await knex.transaction(async (trx) => {
-        const victimId = await trx("victims")
+        const [{victim_id}] = await trx("victims")
           .insert({
             victim_name_lastname: victim.victim_name_lastname,
             victim_age: victim.victim_age,
@@ -116,7 +116,9 @@ router.operation({
           })
           .returning("victim_id");
 
-        const aggresorId = await trx("aggresors")
+        console.log(victim_id);
+
+        const [{aggresor_id}] = await trx("aggresors")
           .insert({
             aggresor_name_lastname: aggresor.aggresor_name_lastname,
             aggresor_gender: aggresor.aggresor_gender,
@@ -131,8 +133,8 @@ router.operation({
           .returning("aggresor_id");
 
         await trx("cases").insert({
-          victim_id: victimId,
-          aggresor_id: aggresorId,
+          victim_id: victim_id,
+          aggresor_id: aggresor_id,
           incident_date: caseData.incident_date,
           case_day_moment: caseData.case_day_moment,
           case_type: caseData.case_type,
