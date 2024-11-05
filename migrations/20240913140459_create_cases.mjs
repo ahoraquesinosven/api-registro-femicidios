@@ -1,57 +1,57 @@
 export const up = async (knex) => {
     return knex.schema.withSchema('public')
         .createTable('victims', (table) => {
-            table.increments('victim_id', { primaryKey: true }).notNullable();
-            table.date('victim_creation').defaultTo(knex.fn.now()).notNullable();
-            table.date('victim_last_update').defaultTo(knex.fn.now()).notNullable();
-            table.specificType('victim_name_lastname', 'character varying');
-            table.integer('victim_age');
-            table.string('victim_nationality', 3); 
-            table.boolean('victim_prostitution');
-            table.boolean('victim_missing');
-            table.boolean('victim_native_people');
-            table.boolean('victim_pregnant');
-            table.boolean('victim_disabillity');
-            table.text('victim_ocupation');
-            table.boolean('victim_children');
+            table.increments('id', { primaryKey: true }).notNullable();
+            table.date('createdAt').defaultTo(knex.fn.now()).notNullable();
+            table.date('updatedAt').defaultTo(knex.fn.now()).notNullable();
+            table.specificType('fullName', 'character varying');
+            table.integer('age');
+            table.specificType('gender', 'character varying');
+            table.string('nationality', 3);
+            table.boolean('isSexualWorker');
+            table.boolean('isMissingPerson');
+            table.boolean('isNativePeople');
+            table.boolean('isPregnant');
+            table.boolean('hasDisabillity');
+            table.specificType('occupation', 'character varying');
+            table.boolean('hasChildren');
         })
-        .createTable('aggresors', (table) => {
-            table.increments('aggresor_id', { primaryKey: true }).notNullable();
-            table.date('aggresor_creation').defaultTo(knex.fn.now()).notNullable();
-            table.date('aggresor_last_update').defaultTo(knex.fn.now()).notNullable();
-            table.specificType('aggresor_gender', 'character varying');
-            table.specificType('aggresor_name_lastname', 'character varying');
-            table.integer('aggresor_age');
-            table.boolean('aggresor_legal_complaint_history');
-            table.boolean('aggresor_cases_history');
-            table.boolean('aggresor_captive_history');
-            table.boolean('aggresor_behaviour_post_case');
+        .createTable('aggressors', (table) => {
+            table.increments('id', { primaryKey: true }).notNullable();
+            table.date('createdAt').defaultTo(knex.fn.now()).notNullable();
+            table.date('updatedAt').defaultTo(knex.fn.now()).notNullable();
+            table.specificType('gender', 'character varying');
+            table.specificType('fullName', 'character varying');
+            table.integer('age');
+            table.boolean('hasLegalComplaintHistory');
+            table.boolean('hasPreviousCases');
+            table.boolean('wasInPrison');
+            table.specificType('behaviourPostCase', 'character varying');
          })
         .createTable('cases', (table) => {
-            table.increments('case_id', { primaryKey: true }).notNullable();
-            table.integer('victim_id').notNullable();
-            table.integer('aggresor_id').notNullable();
-            table.date('case_creation').defaultTo(knex.fn.now()).notNullable();
-            table.date('last_update').defaultTo(knex.fn.now()).notNullable();
-            table.date('incident_date');
-            table.specificType('case_day_moment', 'character varying');
-            table.specificType('case_type', 'character varying');
-            table.specificType('case_gender', 'character varying');
-            table.specificType('case_province', 'character varying');
-            table.specificType('case_location', 'character varying');
-            table.specificType('case_geographic_ubication', 'character varying');
-            table.specificType('case_place', 'character varying');
-            table.specificType('case_form', 'character varying');
-            table.boolean('case_justice');
-            table.integer('case_legal_complaints');
-            table.boolean('case_rape');
-            table.boolean('case_organized_crime');
-            table.text('case_organized_crime_notes');
-            table.text('case_notes');
-            table.specificType('case_news_links', 'text ARRAY');
+            table.increments('id', { primaryKey: true }).notNullable();
+            table.integer('victimId').notNullable();
+            table.integer('aggressorId').notNullable();
+            table.date('createdAt').defaultTo(knex.fn.now()).notNullable();
+            table.date('updatedAt').defaultTo(knex.fn.now()).notNullable();
+            table.date('occurredAt');
+            table.specificType('momentOfDay', 'character varying');
+            // TODO: Como queremos representar estos 4 campos?
+            table.specificType('province', 'character varying');
+            table.specificType('location', 'character varying');
+            table.specificType('geographicLocation', 'character varying');
+            table.specificType('place', 'character varying');
+            table.specificType('murderWeapon', 'character varying');
+            table.boolean('wasJudicialized');
+            table.boolean('hadLegalComplaints');
+            table.boolean('isRape');
+            table.boolean('isRelatedToOrganizedCrime');
+            table.text('organizedCrimeNotes');
+            table.text('generalNotes');
+            table.specificType('newsLinks', 'text ARRAY');
 
-            table.foreign('victim_id').references('victims.victim_id');
-            table.foreign('aggresor_id').references('aggresors.aggresor_id');
+            table.foreign('victimId').references('victims.id');
+            table.foreign('aggressorId').references('aggressors.id');
         });
 };
 
@@ -59,5 +59,5 @@ export const down = async (knex) => {
     return knex.schema.withSchema('public')
         .dropTable('cases')
         .dropTable('victims')
-        .dropTable('aggresors');
+        .dropTable('aggressors');
 };
