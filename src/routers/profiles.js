@@ -1,29 +1,33 @@
-import Router from "@koa/router";
-import {requireUserAuth} from "../middleware/auth.js";
-import {OpenApiRouter} from "../openapi.js";
+import {OpenApiRouter, securitySchemes} from "../openapi.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/profiles",
 });
 
 router.operation({
-  relativePath: "/me",
-  method: "get",
-  spec: {
+  method: "get", relativePath: "/me", spec: {
     tags: ["auth"],
     summary: "Retrieves the current user profile",
-    security: [{"oauth": []}],
+    security: securitySchemes.oauth,
     responses: {
       "200": {
-        description: "Successful response",
+        description: "Current user profile retrieved successfully",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                name: {type: "string"},
+                pictureUrl: {type: "string"},
+              },
+              required: ["name", "pictureUrl"],
+            },
+          },
+        },
       },
     },
-
   },
-
-  handlers: [
-    requireUserAuth,
-    async (ctx) => {
+  handlers: [async (ctx) => {
       ctx.body = {
         name: ctx.state.token.name,
         pictureUrl: ctx.state.token.picture,
