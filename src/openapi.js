@@ -1,33 +1,34 @@
 import Router from "@koa/router";
 import config from "./config/values.js";
-import {requireUserAuth, requireServerAuth} from "./middleware/auth.js";
+import { checkUserAuth, checkServerAuth, requireAuth } from "./middleware/auth.js";
+import Ajv from 'ajv';
 
 export const securitySchemes = {
   oauth: {
     component: {
-      type: "oauth2",
-      description: "OAuth2.0 security scheme used for public endpoints",
-      flows: {
-        authorizationCode: {
-          authorizationUrl: "/auth/authorize",
-          tokenUrl: "/auth/token",
-          scopes: {},
+        type: "oauth2",
+        description: "OAuth2.0 security scheme used for public endpoints",
+        flows: {
+          authorizationCode: {
+            authorizationUrl: "/auth/authorize",
+            tokenUrl: "/auth/token",
+            scopes: {},
+          },
         },
       },
-    },
-    endpointSpec: [{oauth: []}],
-    middleware: requireUserAuth,
+    securityRequirement: { "oauth": [] },
+    requestValidator: checkUserAuth,
   },
 
   internal: {
     component: {
-      type: "apiKey",
-      description: "API Key security scheme used for internal endpoints",
-      name: "authorization",
-      in: "header",
-    },
-    endpointSpec: [{internal: []}],
-    middleware: requireServerAuth,
+        type: "apiKey",
+        description: "API Key security scheme used for internal endpoints",
+        name: "authorization",
+        in: "header",
+      },
+    securityRequirement: { "internal": [] },
+    requestValidator: checkServerAuth,
   },
 };
 
@@ -49,6 +50,60 @@ export const openApiDocument = {
   paths: {},
 };
 
+const securityMiddleware = (operationSpec) => {
+  if (!operationSpec.security) {
+    return [];
+  }
+
+  const checkers = operationSpec.security.map(spec => spec.requestValidator);
+  return [requireAuth(checkers)];
+}
+
+const openApiSecurityRequirement = (operationSpec) => {
+  if (!operationSpec.security) {
+    return {};
+  }
+
+  return {
+    security: operationSpec.security.map(spec => spec.securityRequirement),
+  };
+}
+
+const requestValidationMiddleware = (operationSpec) => {
+  return (ctx, next) => {
+    for (const paramSpec of operationSpec.parameters) {
+      // TODO: Handle "in", estamos usando solo query
+      const paramValue = ctx.request.query[paramSpec.name];
+      if (paramSpec.required && !paramValue) {
+        ctx.body = {
+          message: `${paramSpec.name} is required`,
+        };
+        ctx.status = 422;
+        return;
+      }
+
+      if (paramSpec.required || paramValue) {
+        const ajv = new Ajv({ coerceTypes: true });
+        const validate = ajv.compile(paramSpec.schema);
+
+        if (!validate(paramValue)) {
+          console.log(validate.errors);
+          ctx.body = validate.errors.map((error) => ({
+            param: paramSpec.name,
+            message: error.message,
+            extraInfo: error.params,
+          }));
+          ctx.status = 422;
+          return;
+        }
+      }
+    }
+
+    // Si esta todo bien
+    return next();
+  }
+}
+
 export class OpenApiRouter {
   nativeRouter;
   prefix;
@@ -56,17 +111,18 @@ export class OpenApiRouter {
   constructor({prefix, ...opts}) {
     this.prefix = prefix;
     this.nativeRouter = new Router({
-      ...opts,
       prefix,
+      ...opts,
     });
   }
 
   registerNativeRoute(options) {
     const path = options.relativePath.replaceAll(/{(\w+)}/g, (_, group) => `:${group}`);
-    const securityHandlers = options.spec.security ? [options.spec.security.middleware] : [];
+
     this.nativeRouter[options.method](
       path,
-      ...securityHandlers,
+      ...securityMiddleware(options.spec),
+      requestValidationMiddleware(options.spec),
       ...options.handlers,
     );
   }
@@ -74,10 +130,9 @@ export class OpenApiRouter {
   registerOpenApiDocumentPath(options) {
     const path = `${this.prefix}${options.relativePath}`;
     const pathObject = (openApiDocument.paths[path] ||= {});
-    const security = options.spec.security ? { security: options.spec.security.endpointSpec } : {};
     pathObject[options.method] = {
       ...options.spec,
-      ...security,
+      ...openApiSecurityRequirement(options.spec),
     };
   }
 

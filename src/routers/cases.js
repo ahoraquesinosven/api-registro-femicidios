@@ -15,7 +15,7 @@ router.operation({
   method: "post", relativePath: "/", spec: {
     tags: ["cases"],
     summary: "Create a new case",
-    security: securitySchemes.oauth,
+    security: [securitySchemes.oauth],
     requestBody: {
       content: {
         "application/json": {

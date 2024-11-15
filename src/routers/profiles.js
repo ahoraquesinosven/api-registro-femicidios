@@ -8,7 +8,7 @@ router.operation({
   method: "get", relativePath: "/me", spec: {
     tags: ["auth"],
     summary: "Retrieves the current user profile",
-    security: securitySchemes.oauth,
+    security: [securitySchemes.oauth],
     responses: {
       "200": {
         description: "Current user profile retrieved successfully",
@@ -29,8 +29,8 @@ router.operation({
   },
   handlers: [async (ctx) => {
       ctx.body = {
-        name: ctx.state.token.name,
-        pictureUrl: ctx.state.token.picture,
+        name: ctx.state.auth.name,
+        pictureUrl: ctx.state.auth.picture,
       };
     }
   ],
