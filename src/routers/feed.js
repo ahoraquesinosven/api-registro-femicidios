@@ -10,7 +10,7 @@ router.operation({
   method: "post", relativePath: "/refresh", spec: {
     tags: ["feed"],
     summary: "Refreshes the feeds by connecting to our feed sources",
-    security: securitySchemes.internal,
+    security: [securitySchemes.internal],
     responses: {
       "204": {
         description: "Successful response",
@@ -32,7 +32,7 @@ router.operation({
   method: "get", relativePath: "/items", spec: {
     tags: ["feed"],
     summary: "Retrieves the full list of feed items",
-    security: securitySchemes.oauth,
+    security: [securitySchemes.internal, securitySchemes.oauth],
     parameters: [
       {
         name: "status",
@@ -146,7 +146,7 @@ for (const op of transitionOperations) {
     method: op.method, relativePath: op.relativePath, spec: {
       tags: ["feed"],
       summary: op.description,
-      security: securitySchemes.oauth,
+      security: [securitySchemes.oauth],
       parameters: [
         {
           name: "feedItemId",
@@ -167,7 +167,7 @@ for (const op of transitionOperations) {
     handlers: [async (ctx) => {
       const updatedFeedItems = await op.updateFunction(
         ctx.params.feedItemId,
-        ctx.state.token.id
+        ctx.state.auth.id
       );
 
       if (updatedFeedItems.length === 0) {
