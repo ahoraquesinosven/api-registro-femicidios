@@ -81,20 +81,10 @@ const feedItemsSortCriteria = {
     order: "asc",
     operator: ">",
   },
-  inProgress: {
-    field: "updatedAt",
-    order: "desc",
-    operator: "<",
-  },
-  done: {
-    field: "updatedAt",
-    order: "desc",
-    operator: "<",
-  },
 };
 
 export async function fetchFeedItems({ status, limit, start }) {
-  const sortCriteria = feedItemsSortCriteria[status];
+  const sortCriteria = feedItemsSortCriteria[status] || { field: "updatedAt", order: "desc", operator: "<" };
 
   const baseQuery = feedItemsQuery()
     .orderBy(`feedItems.${sortCriteria.field}`, sortCriteria.order);
