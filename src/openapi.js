@@ -2,9 +2,10 @@ import Router from "@koa/router";
 import config from "./config/values.js";
 import {checkUserAuth, checkServerAuth, requireAuth} from "./middleware/auth.js";
 import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 
-
-const ajv = new Ajv({coerceTypes: true});
+const ajv = new Ajv({coerceTypes: true, allErrors: true});
+addFormats(ajv);
 
 export const securitySchemes = {
   oauth: {
@@ -72,7 +73,7 @@ const openApiSecurityRequirement = (operationSpec) => {
   };
 }
 
-const getParameterValue = (request, paramSpec) => {
+const getParameterValue = (ctx, paramSpec) => {
   switch (paramSpec.in) {
     case "query":
       return request.query[paramSpec.name];
@@ -81,15 +82,16 @@ const getParameterValue = (request, paramSpec) => {
     case "header":
       return request.headers[paramSpec.name];
     case "cookie":
-      return request.cookies[paramSpec.name]
+      return ctx.cookies.get(paramSpec.name);
   }
 };
 
-const validateParameter = (request, paramSpec) => {
-  const paramValue = getParameterValue(request, paramSpec);
+const validateParameter = (ctx, paramSpec) => {
+  const paramValue = getParameterValue(ctx, paramSpec);
 
   if (paramSpec.required && !paramValue) {
     return [{
+      type: "parameter",
       param: paramSpec.name,
       message: `is required`,
     }];
@@ -100,7 +102,45 @@ const validateParameter = (request, paramSpec) => {
 
     if (!validate(paramValue)) {
       return validate.errors.map((error) => ({
+        type: "parameter",
         param: paramSpec.name,
+        message: error.message,
+        extraInfo: error.params,
+      }));
+    }
+  }
+
+  return [];
+};
+
+const validateBody = (request, bodySpec) => {
+  if (!bodySpec) {
+    return [];
+  }
+
+  const mediaTypeSpec = bodySpec.content[request.type];
+  if (!mediaTypeSpec) {
+    return [{
+      type: "body",
+      message: `Request content-type ${request.type} is not supported`,
+    }];
+  }
+
+  if (bodySpec.required || !request.body) {
+    return [{
+      type: "body",
+      message: "is required",
+    }];
+  }
+
+  if (request.body) {
+    const validate = ajv.compile(mediaTypeSpec.schema);
+
+    if (!validate(request.body)) {
+
+      return validate.errors.map((error) => ({
+        type: "body",
+        path: error.instancePath,
         message: error.message,
         extraInfo: error.params,
       }));
@@ -114,11 +154,11 @@ const requestValidationMiddleware = (operationSpec) => {
   return (ctx, next) => {
     const parametersSpec = operationSpec.parameters || [];
     const parametersErrors = parametersSpec.flatMap(
-      (paramSpec) => validateParameter(ctx.request, paramSpec)
+      (paramSpec) => validateParameter(ctx, paramSpec)
     );
 
-    // TODO: Validate request body if set
-    const bodyErrors = [];
+    const bodySpec = operationSpec.requestBody;
+    const bodyErrors = validateBody(ctx.request, bodySpec);
 
     const errors = [...parametersErrors, ...bodyErrors];
 
