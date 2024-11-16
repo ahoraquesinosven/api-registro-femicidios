@@ -1,33 +1,36 @@
 import Router from "@koa/router";
 import config from "./config/values.js";
-import { checkUserAuth, checkServerAuth, requireAuth } from "./middleware/auth.js";
+import {checkUserAuth, checkServerAuth, requireAuth} from "./middleware/auth.js";
 import Ajv from 'ajv';
+
+
+const ajv = new Ajv({coerceTypes: true});
 
 export const securitySchemes = {
   oauth: {
     component: {
-        type: "oauth2",
-        description: "OAuth2.0 security scheme used for public endpoints",
-        flows: {
-          authorizationCode: {
-            authorizationUrl: "/auth/authorize",
-            tokenUrl: "/auth/token",
-            scopes: {},
-          },
+      type: "oauth2",
+      description: "OAuth2.0 security scheme used for public endpoints",
+      flows: {
+        authorizationCode: {
+          authorizationUrl: "/auth/authorize",
+          tokenUrl: "/auth/token",
+          scopes: {},
         },
       },
-    securityRequirement: { "oauth": [] },
+    },
+    securityRequirement: {"oauth": []},
     requestValidator: checkUserAuth,
   },
 
   internal: {
     component: {
-        type: "apiKey",
-        description: "API Key security scheme used for internal endpoints",
-        name: "authorization",
-        in: "header",
-      },
-    securityRequirement: { "internal": [] },
+      type: "apiKey",
+      description: "API Key security scheme used for internal endpoints",
+      name: "authorization",
+      in: "header",
+    },
+    securityRequirement: {"internal": []},
     requestValidator: checkServerAuth,
   },
 };
@@ -69,37 +72,62 @@ const openApiSecurityRequirement = (operationSpec) => {
   };
 }
 
+const getParameterValue = (request, paramSpec) => {
+  switch (paramSpec.in) {
+    case "query":
+      return request.query[paramSpec.name];
+    case "path":
+      return request.params[paramSpec.name];
+    case "header":
+      return request.headers[paramSpec.name];
+    case "cookie":
+      return request.cookies[paramSpec.name]
+  }
+};
+
+const validateParameter = (request, paramSpec) => {
+  const paramValue = getParameterValue(request, paramSpec);
+
+  if (paramSpec.required && !paramValue) {
+    return [{
+      param: paramSpec.name,
+      message: `is required`,
+    }];
+  }
+
+  if (paramValue) {
+    const validate = ajv.compile(paramSpec.schema);
+
+    if (!validate(paramValue)) {
+      return validate.errors.map((error) => ({
+        param: paramSpec.name,
+        message: error.message,
+        extraInfo: error.params,
+      }));
+    }
+  }
+
+  return [];
+};
+
 const requestValidationMiddleware = (operationSpec) => {
   return (ctx, next) => {
-    for (const paramSpec of operationSpec.parameters) {
-      // TODO: Handle "in", estamos usando solo query
-      const paramValue = ctx.request.query[paramSpec.name];
-      if (paramSpec.required && !paramValue) {
-        ctx.body = {
-          message: `${paramSpec.name} is required`,
-        };
-        ctx.status = 422;
-        return;
-      }
+    const parametersSpec = operationSpec.parameters || [];
+    const parametersErrors = parametersSpec.flatMap(
+      (paramSpec) => validateParameter(ctx.request, paramSpec)
+    );
 
-      if (paramSpec.required || paramValue) {
-        const ajv = new Ajv({ coerceTypes: true });
-        const validate = ajv.compile(paramSpec.schema);
+    // TODO: Validate request body if set
+    const bodyErrors = [];
 
-        if (!validate(paramValue)) {
-          console.log(validate.errors);
-          ctx.body = validate.errors.map((error) => ({
-            param: paramSpec.name,
-            message: error.message,
-            extraInfo: error.params,
-          }));
-          ctx.status = 422;
-          return;
-        }
-      }
+    const errors = [...parametersErrors, ...bodyErrors];
+
+    if (errors.length > 0) {
+      ctx.status = 422;
+      ctx.body = errors;
+      return;
     }
 
-    // Si esta todo bien
     return next();
   }
 }
