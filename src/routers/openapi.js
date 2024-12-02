@@ -6,7 +6,7 @@ const router = new Router({
 });
 
 router.get("/openapi.json", (ctx) => {
-  ctx.body = openApiDocument.document;
+  ctx.body = openApiDocument;
 });
 
 export default router;
