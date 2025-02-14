@@ -13,6 +13,13 @@ export default {
     }),
   },
 
+  logs: {
+    format: entry({
+      envKey: "LOGS_FORMAT",
+      doc: "Format used to render log entries to stdout. Must be either `pretty` or `cloud`.",
+    }),
+  },
+
   auth: {
     google: {
       clientId: entry({

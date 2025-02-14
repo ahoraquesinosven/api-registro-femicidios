@@ -76,11 +76,11 @@ const openApiSecurityRequirement = (operationSpec) => {
 const getParameterValue = (ctx, paramSpec) => {
   switch (paramSpec.in) {
     case "query":
-      return request.query[paramSpec.name];
+      return ctx.request.query[paramSpec.name];
     case "path":
-      return request.params[paramSpec.name];
+      return ctx.request.params[paramSpec.name];
     case "header":
-      return request.headers[paramSpec.name];
+      return ctx.request.headers[paramSpec.name];
     case "cookie":
       return ctx.cookies.get(paramSpec.name);
   }

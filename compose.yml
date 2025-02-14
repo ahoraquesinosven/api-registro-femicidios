@@ -4,9 +4,11 @@ services:
     build:
       context: .
       target: development
+    develop:
+      watch:
+        - path: package.json
+          action: rebuild
     volumes:
-      - './package.json:/opt/project/package.json'
-      - './package-lock.json:/opt/project/package-lock.json'
       - './knexfile.mjs:/opt/project/knexfile.mjs'
       - './src:/opt/project/src'
       - './bin:/opt/project/bin'
