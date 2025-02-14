@@ -18,7 +18,7 @@ export function logRequest() {
         message: err.message,
         stack: err.stack,
       });
-      ctx.status = 500;
+        ctx.status = 500;
     } finally {
       const durationMs = new Date() - start;
 
