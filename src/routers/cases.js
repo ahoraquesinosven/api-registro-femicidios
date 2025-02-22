@@ -87,37 +87,18 @@ router.operation({
   handlers: [
     async (ctx) => {
       const body = ctx.request.body;
+      //TODO validaciones mas complejas
 
       await knex.transaction(async (trx) => {
         const [{ id: victimId }] = await trx("victims")
           .insert(
-            pick(body.victim, [
-              "fullName",
-              "age",
-              "gender",
-              "nationality",
-              "isSexualWorker",
-              "isMissingPerson",
-              "isNativePeople",
-              "isPregnant",
-              "hasDisabillity",
-              "occupation",
-              "hasChildren",
-            ]),
+            body.victim,
           )
           .returning("id");
 
         const [{ id: aggressorId }] = await trx("aggressors")
           .insert(
-            pick(body.aggressor, [
-              "fullName",
-              "age",
-              "gender",
-              "hasLegalComplaintHistory",
-              "hasPreviousCases",
-              "wasInPrison",
-              "behaviourPostCase",
-            ]),
+            body.aggressor,
           )
           .returning("id");
 
