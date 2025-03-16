@@ -91,15 +91,11 @@ router.operation({
 
       await knex.transaction(async (trx) => {
         const [{ id: victimId }] = await trx("victims")
-          .insert(
-            body.victim,
-          )
+          .insert(body.victim)
           .returning("id");
 
         const [{ id: aggressorId }] = await trx("aggressors")
-          .insert(
-            body.aggressor,
-          )
+          .insert(body.aggressor)
           .returning("id");
 
         await trx("cases").insert({
@@ -125,6 +121,56 @@ router.operation({
       });
 
       ctx.status = 201;
+    },
+  ],
+});
+
+router.operation({
+  method: "get",
+  relativePath: "/",
+  spec: {
+    tags: ["cases"],
+    summary: "List all cases",
+    security: [securitySchemes.oauth],
+    parameters: [],
+    responses: {
+      200: {
+        description: "List of cases",
+        content: {
+          "application/json": {
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  victimName: { type: "string" },
+                  province: { type: "string" },
+                  location: { type: "string" },
+                  aggressor: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  handlers: [
+    async (ctx) => {
+      const cases = await knex("cases")
+        .join("victims", "cases.victimId", "victims.id")
+        .join("aggressors", "cases.aggressorId", "aggressors.id")
+        .select(
+          "cases.id",
+          "victims.fullName as victimName",
+          "cases.province",
+          "cases.location",
+          "aggressors.fullName as aggressor",
+          "cases.updatedAt",
+        );
+
+      ctx.body = cases;
     },
   ],
 });
