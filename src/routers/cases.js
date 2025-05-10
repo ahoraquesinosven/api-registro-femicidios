@@ -167,7 +167,6 @@ router.operation({
           "cases.province",
           "cases.location",
           "aggressors.fullName as aggressor",
-          "cases.updatedAt",
         );
 
       ctx.body = cases;
