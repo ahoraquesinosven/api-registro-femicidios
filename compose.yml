@@ -28,7 +28,7 @@ services:
       - OAUTH_USE_PKCE=true
 
   db:
-    image: postgres
+    image: postgres:11
     ports:
       - "5432:5432"
     volumes:
