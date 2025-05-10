@@ -24,6 +24,7 @@ steps:
       '--set-env-vars', 'AUTH_PROVIDER_CODE_ENCRYPTION_SECRET=${_AUTH_PROVIDER_CODE_ENCRYPTION_SECRET}',
       '--set-env-vars', 'AUTH_INTERNAL_KEY=${_AUTH_INTERNAL_KEY}',
       '--set-env-vars', 'DB_CONNECTION_STRING=${_DB_CONNECTION_STRING}',
+      '--set-env-vars', 'LOGS_FORMAT=cloud',
       '--set-cloudsql-instances', '${_CLOUD_SQL_INSTANCE}',
     ]
 
@@ -50,5 +51,6 @@ steps:
       '--set-env-vars', 'AUTH_PROVIDER_CODE_ENCRYPTION_SECRET=${_AUTH_PROVIDER_CODE_ENCRYPTION_SECRET}',
       '--set-env-vars', 'AUTH_INTERNAL_KEY=${_AUTH_INTERNAL_KEY}',
       '--set-env-vars', 'DB_CONNECTION_STRING=${_DB_CONNECTION_STRING}',
+      '--set-env-vars', 'LOGS_FORMAT=cloud',
       '--set-cloudsql-instances', '${_CLOUD_SQL_INSTANCE}',
     ]

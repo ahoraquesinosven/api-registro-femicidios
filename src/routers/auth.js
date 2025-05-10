@@ -4,6 +4,7 @@ import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValue
 import {createPKCEPair, createXSRFToken} from "../lib/crypto.js";
 import {authorizationRequest, tokenRequest} from "../lib/oauth.js";
 import { upsertUser } from "../data/user.js";
+import { logger } from "../services/logger.js";
 
 const router = new Router({
   prefix: "/auth",
@@ -61,6 +62,7 @@ router.get("google", "/cb/google", async (ctx) => {
   const storedXSRFToken = ctx.cookies.get("xsrf-token");
   const receivedXSRFToken = state.get("xsrf");
   if (!storedXSRFToken || !receivedXSRFToken || storedXSRFToken !== receivedXSRFToken) {
+    logger.warn("invalid XSRFtoken");
     ctx.status = 422;
     return;
   }

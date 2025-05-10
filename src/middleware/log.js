@@ -18,7 +18,7 @@ export function logRequest() {
         message: err.message,
         stack: err.stack,
       });
-      ctx.status = 500;
+        ctx.status = 500;
     } finally {
       const durationMs = new Date() - start;
 
@@ -33,9 +33,11 @@ export function logRequest() {
         latency: `${durationMs / 1000}s`,
       };
 
+      const message = `${httpRequest.status} ${httpRequest.latency} ${httpRequest.requestMethod} ${httpRequest.requestUrl}`
+
       logger.log(
         decideLogLevel(ctx.response.status),
-        {httpRequest},
+        {httpRequest, message},
       );
     }
   };

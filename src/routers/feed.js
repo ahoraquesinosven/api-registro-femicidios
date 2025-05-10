@@ -1,43 +1,38 @@
 import {fetchAllRssFeeds} from "../services/google/alerts.js";
 import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems, markIrrelevantFeedItem, unmarkIrrelevantFeedItem} from "../data/feedItem.js";
-import {requireServerAuth, requireUserAuth} from "../middleware/auth.js";
-import {OpenApiRouter} from "../openapi.js";
+import {OpenApiRouter, securitySchemes} from "../openapi.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/feed",
 });
 
 router.operation({
-  relativePath: "/refresh",
-  method: "post",
-  spec: {
+  method: "post", relativePath: "/refresh", spec: {
     tags: ["feed"],
     summary: "Refreshes the feeds by connecting to our feed sources",
-    security: [{"internal": []}],
+    security: [securitySchemes.internal],
     responses: {
-      "200": {
+      "204": {
         description: "Successful response",
       },
     },
   },
-  handlers: [requireServerAuth, async (ctx) => {
+  handlers: [async (ctx) => {
     const feeds = await fetchAllRssFeeds();
     for (const feed of feeds) {
       const feedItems = feed.items.map(item => feedItemFromRss(feed, item));
       await insertNewFeedItems(feedItems);
     }
 
-    ctx.status = 200;
+    ctx.status = 204;
   }],
 });
 
 router.operation({
-  relativePath: "/items",
-  method: "get",
-  spec: {
+  method: "get", relativePath: "/items", spec: {
     tags: ["feed"],
     summary: "Retrieves the full list of feed items",
-    security: [{"oauth": []}],
+    security: [securitySchemes.internal, securitySchemes.oauth],
     parameters: [
       {
         name: "status",
@@ -72,7 +67,7 @@ router.operation({
       },
     },
   },
-  handlers: [requireUserAuth, async (ctx) => {
+  handlers: [async (ctx) => {
     const {status, limit, start} = ctx.request.query;
 
     const [items, count] = await Promise.all([
@@ -107,244 +102,82 @@ router.operation({
   }],
 });
 
-router.operation({
-  relativePath: "/items/{feedItemId}/assignment",
-  method: "post",
-  spec: {
-    tags: ["feed"],
-    summary: "Assigns a given feed item to the current user",
-    security: [{"oauth": []}],
-    parameters: [
-      {
-        name: "feedItemId",
-        in: "path",
-        description: "Feed item to assign to the current user",
-        required: true,
-        schema: {
-          type: "integer",
+const transitionOperations = [
+  {
+    method: "post",
+    relativePath: "/items/{feedItemId}/assignment",
+    description: "Assigns a given feed item to the current user",
+    updateFunction: (feedItemId, userId) => assignFeedItem(feedItemId, userId),
+  },
+  {
+    method: "delete",
+    relativePath: "/items/{feedItemId}/assignment",
+    description: "Removes the assigned user for a given feed item",
+    updateFunction: (feedItemId) => unassignFeedItem(feedItemId),
+  },
+  {
+    method: "post",
+    relativePath: "/items/{feedItemId}/completion",
+    description: "Marks a single feed item that is assigned to the current user as done",
+    updateFunction: (feedItemId, userId) => completeFeedItem(feedItemId, userId),
+  },
+  {
+    method: "delete",
+    relativePath: "/items/{feedItemId}/completion",
+    description: "Marks a single feed item that is assigned to the current user as in progress",
+    updateFunction: (feedItemId, userId) => uncompleteFeedItem(feedItemId, userId),
+  },
+  {
+    method: "post",
+    relativePath: "/items/{feedItemId}/irrelevant",
+    description: "Mark a single feed item as irrelevant and assign to current user",
+    updateFunction: (feedItemId, userId) => markIrrelevantFeedItem(feedItemId, userId),
+  },
+  {
+    method: "delete",
+    relativePath: "/items/{feedItemId}/irrelevant",
+    description: "Removes the flag irrelevant for a given feed item",
+    updateFunction: (feedItemId) => unmarkIrrelevantFeedItem(feedItemId),
+  },
+]
+
+for (const op of transitionOperations) {
+  router.operation({
+    method: op.method, relativePath: op.relativePath, spec: {
+      tags: ["feed"],
+      summary: op.description,
+      security: [securitySchemes.oauth],
+      parameters: [
+        {
+          name: "feedItemId",
+          in: "path",
+          description: "Feed item to update",
+          required: true,
+          schema: {
+            type: "integer",
+          },
+        },
+      ],
+      responses: {
+        "204": {
+          description: "Successful response",
         },
       },
-    ],
-    responses: {
-      "200": {
-        description: "Successful response",
-      },
     },
-  },
-  handlers: [requireUserAuth, async (ctx) => {
-    const updatedFeedItems = await assignFeedItem(
-      ctx.params.feedItemId,
-      ctx.state.token.id
-    );
+    handlers: [async (ctx) => {
+      const updatedFeedItems = await op.updateFunction(
+        ctx.params.feedItemId,
+        ctx.state.auth.id
+      );
 
-    if (updatedFeedItems.length === 0) {
-      ctx.status = 422;
-      return;
-    }
+      if (updatedFeedItems.length === 0) {
+        ctx.status = 422;
+        return;
+      }
 
-    ctx.status = 200;
-
-  }],
-});
-
-router.operation({
-  relativePath: "/items/{feedItemId}/assignment",
-  method: "delete",
-  spec: {
-    tags: ["feed"],
-    summary: "Removes the assigned user for a given feed item",
-    security: [{"oauth": []}],
-    parameters: [
-      {
-        name: "feedItemId",
-        in: "path",
-        description: "Feed item to unassign",
-        required: true,
-        schema: {
-          type: "integer",
-        },
-      },
-    ],
-    responses: {
-      "200": {
-        description: "Successful response",
-      },
-    },
-  },
-  handlers: [requireUserAuth, async (ctx) => {
-    const updatedFeedItems = await unassignFeedItem(
-      ctx.params.feedItemId,
-    );
-
-    if (updatedFeedItems.length === 0) {
-      ctx.status = 422;
-      return;
-    }
-
-    ctx.status = 200;
-
-  }],
-});
-
-
-router.operation({
-  relativePath: "/items/{feedItemId}/completion",
-  method: "post",
-  spec: {
-    tags: ["feed"],
-    summary: "Marks a single feed item that is assigned to the current user as done",
-    security: [{"oauth": []}],
-    parameters: [
-      {
-        name: "feedItemId",
-        in: "path",
-        description: "Feed item to mark as done",
-        required: true,
-        schema: {
-          type: "integer",
-        },
-      },
-    ],
-    responses: {
-      "200": {
-        description: "Successful response",
-      },
-    },
-  },
-  handlers: [requireUserAuth, async (ctx) => {
-    const updatedFeedItems = await completeFeedItem(
-      ctx.params.feedItemId,
-      ctx.state.token.id
-    );
-
-    if (updatedFeedItems.length === 0) {
-      ctx.status = 422;
-      return;
-    }
-
-    ctx.status = 200;
-
-  }],
-});
-
-router.operation({
-  relativePath: "/items/{feedItemId}/completion",
-  method: "delete",
-  spec: {
-    tags: ["feed"],
-    summary: "Marks a single feed item that is assigned to the current user as in progress",
-    security: [{"oauth": []}],
-    parameters: [
-      {
-        name: "feedItemId",
-        in: "path",
-        description: "Feed item to mark as in progress",
-        required: true,
-        schema: {
-          type: "integer",
-        },
-      },
-    ],
-    responses: {
-      "200": {
-        description: "Successful response",
-      },
-    },
-  },
-  handlers: [requireUserAuth, async (ctx) => {
-    const updatedFeedItems = await uncompleteFeedItem(
-      ctx.params.feedItemId,
-      ctx.state.token.id
-    );
-
-    if (updatedFeedItems.length === 0) {
-      ctx.status = 422;
-      return;
-    }
-
-    ctx.status = 200;
-
-  }],
-});
-
-router.operation({
-  relativePath: "/items/{feedItemId}/irrelevant",
-  method: "post",
-  spec: {
-    tags: ["feed"],
-    summary: "Mark a single feed item as irrelevant and assign to current user",
-    security: [{"oauth": []}],
-    parameters: [
-      {
-        name: "feedItemId",
-        in: "path",
-        description: "Feed item to mark as irrelevant",
-        required: true,
-        schema: {
-          type: "integer",
-        },
-      },
-    ],
-    responses: {
-      "204": {
-        description: "Successful response",
-      },
-    },
-  },
-  handlers: [requireUserAuth, async (ctx) => {
-    const updatedFeedItems = await markIrrelevantFeedItem(
-      ctx.params.feedItemId,
-      ctx.state.token.id
-    );
-
-    if (updatedFeedItems.length === 0) {
-      ctx.status = 422;
-      return;
-    }
-
-    ctx.status = 204;
-
-  }],
-});
-
-router.operation({
-  relativePath: "/items/{feedItemId}/irrelevant",
-  method: "delete",
-  spec: {
-    tags: ["feed"],
-    summary: "Removes the flag irrelevant for a given feed item",
-    security: [{"oauth": []}],
-    parameters: [
-      {
-        name: "feedItemId",
-        in: "path",
-        description: "Feed item to remove irrelevant flag",
-        required: true,
-        schema: {
-          type: "integer",
-        },
-      },
-    ],
-    responses: {
-      "200": {
-        description: "Successful response",
-      },
-    },
-  },
-  handlers: [requireUserAuth, async (ctx) => {
-    const updatedFeedItems = await unmarkIrrelevantFeedItem(
-      ctx.params.feedItemId,
-    );
-
-    if (updatedFeedItems.length === 0) {
-      ctx.status = 422;
-      return;
-    }
-
-    ctx.status = 200;
-
-  }],
-});
-
+      ctx.status = 204;
+    }],
+  });
+}
 
 export default router.nativeRouter;
