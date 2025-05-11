@@ -1,5 +1,7 @@
 import { OpenApiRouter, securitySchemes } from "../openapi.js";
+import PROVINCES from "../data/provinces.js";
 import knex from "../services/knex.js";
+import { logger } from "../services/logger.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
@@ -25,7 +27,7 @@ router.operation({
             properties: {
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { type: "string" },
-              province: { type: "string" },
+              province: { type: "string", enum: PROVINCES.codes },
               location: { type: "string" },
               geographicLocation: { type: "string" },
               place: { type: "string" },
@@ -132,7 +134,35 @@ router.operation({
     tags: ["cases"],
     summary: "List all cases",
     security: [securitySchemes.oauth],
-    parameters: [],
+    parameters: [
+      // TODO: Agregar el resto de los campos para filtrar
+      {
+        name: "province",
+        in: "query",
+        description: "Filter results to only contain cases in the given province",
+        schema: {
+          type: "string",
+          enum: PROVINCES.codes,
+        },
+      },
+      {
+        name: "victimName",
+        in: "query",
+        description: "Filter results to only contain cases in the given province",
+        schema: {
+          type: "string",
+        },
+      },
+      {
+        name: "fromDate",
+        in: "query",
+        description: "Filter results to only contain cases in the given province",
+        schema: {
+          type: "string",
+          format: "date",
+        },
+      },
+    ],
     responses: {
       200: {
         description: "List of cases",
@@ -158,9 +188,26 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      const cases = await knex("cases")
+      const query = knex("cases")
         .join("victims", "cases.victimId", "victims.id")
         .join("aggressors", "cases.aggressorId", "aggressors.id")
+        .where((builder) => {
+          if (ctx.request.query.province) {
+            builder.where("province", ctx.request.query.province);
+          }
+
+          if (ctx.request.query.fromDate) {
+            builder.where("occurredAt", ">", ctx.request.query.fromDate);
+          }
+
+          if (ctx.request.query.victimName) {
+            builder.whereRaw(
+              'levenshtein("victims"."fullName", ?) < 3',
+              [ctx.request.query.victimName]
+            );
+          }
+
+        })
         .select(
           "cases.id",
           "victims.fullName as victimName",
@@ -169,6 +216,8 @@ router.operation({
           "aggressors.fullName as aggressor",
         );
 
+      logger.info(`Running query ${query.toString()}`);
+      const cases = await query;
       ctx.body = cases;
     },
   ],
