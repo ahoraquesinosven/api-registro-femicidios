@@ -22,14 +22,16 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
+            required: [ "occurredAt", "province", "location", "place", "murderWeapon"],  
+
             properties: {
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { type: "string" },
-              province: { type: "string" },
-              location: { type: "string" },
+              province: { type: "string", minLength: 2 },
+              location: { type: "string", minLength: 5 },
               geographicLocation: { type: "string" },
-              place: { type: "string" },
-              murderWeapon: { type: "string" },
+              place: { type: "string", minLength: 2 },
+              murderWeapon: { type: "string", minLength: 2 },
               wasJudicialized: { type: "boolean" },
               hadLegalComplaints: { type: "boolean" },
               isRape: { type: "boolean" },
