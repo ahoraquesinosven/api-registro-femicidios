@@ -22,7 +22,7 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
-            required: [ "occurredAt", "province", "location", "place", "murderWeapon"],  
+            required: [ "occurredAt", "province", "location", "place", "murderWeapon","victim", "aggressor"],  
 
             properties: {
               occurredAt: { type: "string", format: "date" },
@@ -43,7 +43,7 @@ router.operation({
               victim: {
                 type: "object",
                 properties: {
-                  fullName: { type: "string" },
+                  fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
                   gender: { type: "string" },
                   nationality: { type: "string", minLength: 3, maxLength: 3 },
