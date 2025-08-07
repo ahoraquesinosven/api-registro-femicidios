@@ -2,6 +2,7 @@ import { OpenApiRouter, securitySchemes } from "../openapi.js";
 import knex from "../services/knex.js";
 import provinces from "../data/provinces.js";
 import geographicLocations_list from "../data/geographicLocations.js";
+import case_place_list from "../data/places.js";
 
 
 const router = new OpenApiRouter({  
@@ -33,7 +34,7 @@ router.operation({
               province: { enum: provinces },
               location: { type: "string", minLength: 5 },
               geographicLocation: { enum: geographicLocations_list},
-              place: { type: "string", minLength: 2 },
+              place: { enum: case_place_list },
               murderWeapon: { type: "string", minLength: 2 },
               wasJudicialized: { type: "boolean" },
               hadLegalComplaints: { type: "boolean" },
