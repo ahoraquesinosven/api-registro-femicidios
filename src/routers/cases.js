@@ -3,6 +3,7 @@ import knex from "../services/knex.js";
 import provinces from "../data/provinces.js";
 import geographicLocations_list from "../data/geographicLocations.js";
 import case_place_list from "../data/places.js";
+import murderWeapon_list from "../data/murderWeapons.js";
 
 
 const router = new OpenApiRouter({  
@@ -31,11 +32,11 @@ router.operation({
             properties: {
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { type: "string" },
-              province: { enum: provinces },
+              province: { enum: provinces }
               location: { type: "string", minLength: 5 },
               geographicLocation: { enum: geographicLocations_list},
               place: { enum: case_place_list },
-              murderWeapon: { type: "string", minLength: 2 },
+              murderWeapon: { enum: murderWeapon_list},
               wasJudicialized: { type: "boolean" },
               hadLegalComplaints: { type: "boolean" },
               isRape: { type: "boolean" },
