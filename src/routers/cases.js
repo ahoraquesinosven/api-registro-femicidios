@@ -22,7 +22,7 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
-            required: [ "occurredAt", "province", "location", "place", "murderWeapon","victim", "aggressor"],  
+            required: [ "occurredAt", "province", "location", "place", "murderWeapon","newsLinks","victim", "aggressor"],  
 
             properties: {
               occurredAt: { type: "string", format: "date" },
@@ -38,14 +38,14 @@ router.operation({
               isRelatedToOrganizedCrime: { type: "boolean" },
               organizedCrimeNotes: { type: "string" },
               generalNotes: { type: "string" },
-              newsLinks: { type: "array", items: { type: "string" } },
+              newsLinks: { type: "array", items: { type: "string" } ,   minItems: 1, "uniqueItems": true},
 
               victim: {
                 type: "object",
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { type: "string" },
+                  gender: { type: "string", minLength: 2 },
                   nationality: { type: "string", minLength: 3, maxLength: 3 },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
@@ -61,7 +61,7 @@ router.operation({
               aggressor: {
                 type: "object",
                 properties: {
-                  fullName: { type: "string" },
+                  fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
                   gender: { type: "string" },
                   hasLegalComplaintHistory: { type: "boolean" },
