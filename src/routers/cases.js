@@ -1,7 +1,8 @@
 import { OpenApiRouter, securitySchemes } from "../openapi.js";
 import knex from "../services/knex.js";
+import provinces from "../data/provinces.js";
 
-const router = new OpenApiRouter({
+const router = new OpenApiRouter({  
   prefix: "/v1/cases",
 });
 
@@ -27,7 +28,7 @@ router.operation({
             properties: {
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { type: "string" },
-              province: { type: "string", minLength: 2 },
+              province: { enum: provinces },
               location: { type: "string", minLength: 5 },
               geographicLocation: { type: "string" },
               place: { type: "string", minLength: 2 },
