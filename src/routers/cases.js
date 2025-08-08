@@ -54,7 +54,7 @@ router.operation({
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
                   gender: { enum:gender_list },              
-                  nationality: {type: "string", minLength: 3 }, //nationality: { enum:nationality_list },
+                  nationality: { enum:nationality_list },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
                   isNativePeople: { type: "boolean" },
