@@ -6,6 +6,7 @@ import case_place_list from "../data/places.js";
 import murderWeapon_list from "../data/murderWeapons.js";
 import gender_list from "../data/genders.js";
 import nationality_list from "../data/nationalities.js";
+import behavioursPostCase_list from "../data/behavioursPostCase.js";
 
 
 const router = new OpenApiRouter({  
@@ -52,8 +53,8 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum:gender_list },
-                  nationality: { enum:nationality_list },
+                  gender: { enum:gender_list },              
+                  nationality: {type: "string", minLength: 3 }, //nationality: { enum:nationality_list },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
                   isNativePeople: { type: "boolean" },
@@ -74,7 +75,7 @@ router.operation({
                   hasLegalComplaintHistory: { type: "boolean" },
                   hasPreviousCases: { type: "boolean" },
                   wasInPrison: { type: "boolean" },
-                  behaviourPostCase: { type: "string" },
+                  behaviourPostCase: { enum: behavioursPostCase_list },
                 },
                 additionalProperties: false,
               },

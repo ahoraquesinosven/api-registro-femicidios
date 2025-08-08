@@ -1,18 +1,18 @@
 const nationality_list = [
-"ARGENTINA",
-"BOLIVIA",
-"BRASIL",
-"COLOMBIA",
-"CHILE",
-"ECUADOR",
-"GUYANA",
-"PARAGUAY",
-"PERU",
-"SURINAM",
-"URUGUAY",
-"VENEZUELA",
-"GUAYANA FRANCESA",
-"OTRA"
+"Argentina",
+"Bolivia",
+"Brasil",
+"Colombia",
+"Chile",
+"Ecuador",
+"Guyana",
+"Paraguay",
+"Peru",
+"Surinam",
+"Uruguay",
+"Venezuela",
+"Guyana Francesa",
+"Otra"
 ];
 
-export default gender_list;
+export default nationality_list;
