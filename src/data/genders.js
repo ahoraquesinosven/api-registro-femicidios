@@ -1,9 +1,9 @@
 const gender_list = [
-"Mujer",
-"Hombre",
-"No binario",
-"Trans",
-"Travesti"
+"MUJER",
+"HOMBRE",
+"NO_BINARIO",
+"TRANS",
+"TRAVESTI"
 ];
 
 export default gender_list;

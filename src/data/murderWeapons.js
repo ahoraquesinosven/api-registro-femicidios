@@ -1,16 +1,16 @@
 const murderWeapon_list = [
-"A Golpes",
-"Ahogada",
-"Arma Blanca",
-"Arma de Fuego",
-"Arrojada por el balcón",
-"Asfixia",
-"Atropellada",
-"Descuartizada",
-"Empalamiento",
-"Empujo por las escaleras",
-"Quemada / Calcinada",
-"Otra forma"
+"A_GOLPES",
+"AHOGADA",
+"ARMA_BLANCA",
+"ARMA_DE_FUEGO",
+"ARROJADA_POR_EL_BALCON",
+"ASFIXIA",
+"ATROPELLADA",
+"DESCUARTIZADA",
+"EMPALAMIENTO",
+"EMPUJO_POR_LAS_ESCALERAS",
+"QUEMADA_CALCINADA",
+"OTRA_FORMA"
 ];
 
 export default murderWeapon_list;

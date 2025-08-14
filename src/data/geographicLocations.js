@@ -1,3 +1,3 @@
-const geographicLocations_list = ["Urbana", "Rural"];
+const geographicLocations_list = ["URBANA", "RURAL"];
 
 export default geographicLocations_list;

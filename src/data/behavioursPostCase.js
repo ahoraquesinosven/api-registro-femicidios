@@ -1,14 +1,14 @@
 const behavioursPostCase_list = [
-"Se suicido",
-"Intento suicidarse",
-"Ocultó su autoría",
-"Se fugó",
-"Intento escaparse",
-"Se entregó/confesó",
-"Se deshizo del cuerpo",
-"Pidió ayuda/asistió a la víctima",
-"Se resistió a la autoridad",
-"Ninguna de las anteriores"
+"SE_SUICIDO",
+"INTENTO_SUICIDARSE",
+"OCULTO_SU_AUTORIA",
+"SE_FUGO",
+"INTENTO_ESCAPARSE",
+"SE_ENTREGO_CONFESO",
+"SE_DESHIZO_DEL_CUERPO",
+"PIDIO_AYUDA_ASISTIO_A_LA_VICTIMA",
+"SE_RESISTIO_A_LA_AUTORIDAD",
+"NINGUNA_DE_LAS_ANTERIORES"
 ];
 
 export default behavioursPostCase_list;

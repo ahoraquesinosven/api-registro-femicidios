@@ -1,10 +1,10 @@
 const case_place_list = [
-"Vivienda de la Victima",
-"Vivienda del Agresor",
-"Via Publica",
-"Vivienda de algun Familiar",
-"Vivienda de ambas partes (convivían)",
-"Otro lugar"
+"VIVIENDA_DE_LA_VICTIMA",
+"VIVIENDA_DEL_AGRESOR",
+"VIA_PUBLICA",
+"VIVIENDA_DE_ALGUN_FAMILIAR",
+"VIVIENDA_DE_AMBAS_PARTES_CONVIVIAN",
+"OTRO_LUGAR"
 ];
 
 export default case_place_list;

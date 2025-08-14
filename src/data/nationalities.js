@@ -1,18 +1,18 @@
 const nationality_list = [
-"Argentina",
-"Bolivia",
-"Brasil",
-"Colombia",
-"Chile",
-"Ecuador",
-"Guyana",
-"Paraguay",
-"Peru",
-"Surinam",
-"Uruguay",
-"Venezuela",
-"Guyana Francesa",
-"Otra"
+"ARGENTINA",
+"BOLIVIA",
+"BRASIL",
+"COLOMBIA",
+"CHILE",
+"ECUADOR",
+"GUYANA",
+"PARAGUAY",
+"PERU",
+"SURINAM",
+"URUGUAY",
+"VENEZUELA",
+"GUYANA_FRANCESA",
+"OTRA"
 ];
 
 export default nationality_list;
