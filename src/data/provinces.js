@@ -1,4 +1,4 @@
-const provinces_list = [
+const provincesList = [
 "BUENOS_AIRES", 
 "CATAMARCA",
 "CHACO",
@@ -25,4 +25,4 @@ const provinces_list = [
 "TUCUMAN"
 ];
 
-export default provinces_list;
+export default provincesList;

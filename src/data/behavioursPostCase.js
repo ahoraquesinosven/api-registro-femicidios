@@ -1,4 +1,4 @@
-const behavioursPostCase_list = [
+const behavioursPostCaseList = [
 "SE_SUICIDO",
 "INTENTO_SUICIDARSE",
 "OCULTO_SU_AUTORIA",
@@ -11,4 +11,4 @@ const behavioursPostCase_list = [
 "NINGUNA_DE_LAS_ANTERIORES"
 ];
 
-export default behavioursPostCase_list;
+export default behavioursPostCaseList;

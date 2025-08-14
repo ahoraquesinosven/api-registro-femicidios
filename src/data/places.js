@@ -1,4 +1,4 @@
-const case_place_list = [
+const casePlaceList = [
 "VIVIENDA_DE_LA_VICTIMA",
 "VIVIENDA_DEL_AGRESOR",
 "VIA_PUBLICA",
@@ -7,4 +7,4 @@ const case_place_list = [
 "OTRO_LUGAR"
 ];
 
-export default case_place_list;
+export default casePlaceList;

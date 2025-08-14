@@ -1,4 +1,4 @@
-const gender_list = [
+const genderList = [
 "MUJER",
 "HOMBRE",
 "NO_BINARIO",
@@ -6,4 +6,4 @@ const gender_list = [
 "TRAVESTI"
 ];
 
-export default gender_list;
+export default genderList;

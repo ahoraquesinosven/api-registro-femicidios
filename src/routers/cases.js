@@ -1,12 +1,12 @@
 import { OpenApiRouter, securitySchemes } from "../openapi.js";
 import knex from "../services/knex.js";
 import provinces from "../data/provinces.js";
-import geographicLocations_list from "../data/geographicLocations.js";
-import case_place_list from "../data/places.js";
-import murderWeapon_list from "../data/murderWeapons.js";
-import gender_list from "../data/genders.js";
-import nationality_list from "../data/nationalities.js";
-import behavioursPostCase_list from "../data/behavioursPostCase.js";
+import geographicLocationsList from "../data/geographicLocations.js";
+import casePlaceList from "../data/places.js";
+import murderWeaponList from "../data/murderWeapons.js";
+import genderList from "../data/genders.js";
+import nationalityList from "../data/nationalities.js";
+import behavioursPostCaseList from "../data/behavioursPostCase.js";
 
 
 const router = new OpenApiRouter({  
@@ -37,9 +37,9 @@ router.operation({
               momentOfDay: { type: "string" },
               province: { enum: provinces },
               location: { type: "string", minLength: 5 },
-              geographicLocation: { enum: geographicLocations_list},
-              place: { enum: case_place_list },
-              murderWeapon: { enum: murderWeapon_list},
+              geographicLocation: { enum: geographicLocationsList},
+              place: { enum: casePlaceList},
+              murderWeapon: { enum: murderWeaponList},
               wasJudicialized: { type: "boolean" },
               hadLegalComplaints: { type: "boolean" },
               isRape: { type: "boolean" },
@@ -53,8 +53,8 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum:gender_list },              
-                  nationality: { enum:nationality_list },
+                  gender: { enum:genderList },              
+                  nationality: { enum:nationalityList },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
                   isNativePeople: { type: "boolean" },
@@ -71,11 +71,11 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum:gender_list },
+                  gender: { enum:genderList },
                   hasLegalComplaintHistory: { type: "boolean" },
                   hasPreviousCases: { type: "boolean" },
                   wasInPrison: { type: "boolean" },
-                  behaviourPostCase: { enum: behavioursPostCase_list },
+                  behaviourPostCase: { enum: behavioursPostCaseList },
                 },
                 additionalProperties: false,
               },

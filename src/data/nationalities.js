@@ -1,4 +1,4 @@
-const nationality_list = [
+const nationalityList = [
 "ARGENTINA",
 "BOLIVIA",
 "BRASIL",
@@ -15,4 +15,4 @@ const nationality_list = [
 "OTRA"
 ];
 
-export default nationality_list;
+export default nationalityList;

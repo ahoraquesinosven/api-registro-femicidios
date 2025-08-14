@@ -1,4 +1,4 @@
-const murderWeapon_list = [
+const murderWeaponList = [
 "A_GOLPES",
 "AHOGADA",
 "ARMA_BLANCA",
@@ -13,4 +13,4 @@ const murderWeapon_list = [
 "OTRA_FORMA"
 ];
 
-export default murderWeapon_list;
+export default murderWeaponList;
