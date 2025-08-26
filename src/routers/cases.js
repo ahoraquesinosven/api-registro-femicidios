@@ -8,7 +8,10 @@ import genderList from "../data/genders.js";
 import nationalityList from "../data/nationalities.js";
 import behavioursPostCaseList from "../data/behavioursPostCase.js";
 import momentOfDayList from "../data/momentsOfDay.js";
-
+import victimBondAggressor from "../data/victimBondAggressor.js";
+import caseCategories from "../data/caseCategories.js";
+import judicialMeasures from "../data/judicialMeasures.js"
+import momentOfDayList from "../data/momentsOfDay.js";
 
 const router = new OpenApiRouter({  
   prefix: "/v1/cases",
@@ -31,9 +34,10 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
-            required: [ "occurredAt", "province", "location", "place", "newsLinks","victim", "aggressor"],  
+            required: [ "occurredAt", "province", "location", "place", "newsLinks","victim", "aggressor", "caseCategory"],  
 
             properties: {
+              caseCategory:{enum: caseCategories},
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { enum: momentOfDayList },
               province: { enum: provinces },
@@ -41,13 +45,17 @@ router.operation({
               geographicLocation: { enum: geographicLocationsList},
               place: { enum: casePlaceList},
               murderWeapon: { enum: murderWeaponList},
-              wasJudicialized: { type: "boolean" },
               hadLegalComplaints: { type: "boolean" },
+              wasJudicialized: { type: "boolean" }, //habia alguna medida judicial
+              judicialMeasures: {type: "array", items: { enum:judicialMeasures }},
               isRape: { type: "boolean" },
               isRelatedToOrganizedCrime: { type: "boolean" },
               organizedCrimeNotes: { type: "string" },
+              victimBondAggressor: {enum:victimBondAggressor},
               generalNotes: { type: "string" },
               newsLinks: { type: "array", items: { type: "string" } ,   minItems: 1, "uniqueItems": true},
+              
+
 
               victim: {
                 type: "object",
@@ -111,6 +119,7 @@ router.operation({
 
         await trx("cases").insert({
           ...pick(body, [
+            "caseCategory",
             "occurredAt",
             "momentOfDay",
             "province",
@@ -119,12 +128,14 @@ router.operation({
             "place",
             "murderWeapon",
             "wasJudicialized",
+            "judicialMeasures",
             "hadLegalComplaints",
             "isRape",
             "isRelatedToOrganizedCrime",
             "organizedCrimeNotes",
             "generalNotes",
             "newsLinks",
+            "victimBondAggressor",
           ]),
           aggressorId,
           victimId,

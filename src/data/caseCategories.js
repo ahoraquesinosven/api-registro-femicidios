@@ -1,0 +1,9 @@
+const caseCategories = [
+"FEMICIDIO_DIRECTO",
+"FEMICIDIO_VINCULADO",
+"TRAVESTICIDIO_TRANSFEMICIDIO",
+"INSTIGACION_AL_SUICIDIO",
+"CRIMEN_DE_ODIO"
+];
+
+export default caseCategories;
