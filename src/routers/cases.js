@@ -70,6 +70,7 @@ router.operation({
                   hasDisabillity: { type: "boolean" },
                   occupation: { type: "string" },
                   hasChildren: { type: "boolean" },
+                  numberOfChildren: {type: "integer"},
                 },
                 additionalProperties: false,
               },
