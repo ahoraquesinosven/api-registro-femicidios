@@ -73,6 +73,7 @@ router.operation({
                   occupation: { type: "string" },
                   hasChildren: { type: "boolean" },
                   numberOfChildren: {type: "integer"},
+                  victimBondAggressor: {enum:victimBondAggressor},
                 },
                 additionalProperties: false,
               },
