@@ -7,6 +7,7 @@ import murderWeaponList from "../data/murderWeapons.js";
 import genderList from "../data/genders.js";
 import nationalityList from "../data/nationalities.js";
 import behavioursPostCaseList from "../data/behavioursPostCase.js";
+import momentOfDayList from "../data/momentsOfDay.js";
 
 
 const router = new OpenApiRouter({  
@@ -34,7 +35,7 @@ router.operation({
 
             properties: {
               occurredAt: { type: "string", format: "date" },
-              momentOfDay: { type: "string" },
+              momentOfDay: { enum: momentOfDayList },
               province: { enum: provinces },
               location: { type: "string", minLength: 5 },
               geographicLocation: { enum: geographicLocationsList},
