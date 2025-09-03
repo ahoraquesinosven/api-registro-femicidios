@@ -51,7 +51,6 @@ router.operation({
               isRape: { type: "boolean" },
               isRelatedToOrganizedCrime: { type: "boolean" },
               organizedCrimeNotes: { type: "string" },
-              victimBondAggressor: {enum:victimBondAggressor},
               generalNotes: { type: "string" },
               newsLinks: { type: "array", items: { type: "string" } ,   minItems: 1, "uniqueItems": true},
               
