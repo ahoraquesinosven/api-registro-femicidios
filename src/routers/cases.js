@@ -11,7 +11,6 @@ import momentOfDayList from "../data/momentsOfDay.js";
 import victimBondAggressor from "../data/victimBondAggressor.js";
 import caseCategories from "../data/caseCategories.js";
 import judicialMeasures from "../data/judicialMeasures.js"
-import momentOfDayList from "../data/momentsOfDay.js";
 import securityForcesList from "../data/securityForces.js";
 
 
