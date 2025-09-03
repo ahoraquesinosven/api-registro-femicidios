@@ -12,6 +12,8 @@ import victimBondAggressor from "../data/victimBondAggressor.js";
 import caseCategories from "../data/caseCategories.js";
 import judicialMeasures from "../data/judicialMeasures.js"
 import momentOfDayList from "../data/momentsOfDay.js";
+import securityForcesList from "../data/securityForces.js";
+
 
 const router = new OpenApiRouter({  
   prefix: "/v1/cases",
@@ -85,6 +87,8 @@ router.operation({
                   hasPreviousCases: { type: "boolean" },
                   wasInPrison: { type: "boolean" },
                   behaviourPostCase: { enum: behavioursPostCaseList },
+                  belongsSecurityForce: { type: "boolean" },
+                  securityForce: {enum:securityForcesList},
                 },
                 additionalProperties: false,
               },
