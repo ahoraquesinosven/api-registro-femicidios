@@ -14,7 +14,7 @@ import judicialMeasures from "../data/judicialMeasures.js"
 import securityForcesList from "../data/securityForces.js";
 
 
-const router = new OpenApiRouter({  
+const router = new OpenApiRouter({
   prefix: "/v1/cases",
 });
 
@@ -35,26 +35,27 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
-            required: [ "occurredAt", "province", "location", "place", "newsLinks","victim", "aggressor", "caseCategory"],  
+            required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
 
             properties: {
-              caseCategory:{enum: caseCategories},
+              caseCategory: { enum: caseCategories },
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { enum: momentOfDayList },
               province: { enum: provinces },
               location: { type: "string", minLength: 5 },
-              geographicLocation: { enum: geographicLocationsList},
-              place: { enum: casePlaceList},
-              murderWeapon: { enum: murderWeaponList},
+              geographicLocation: { enum: geographicLocationsList },
+              place: { enum: casePlaceList },
+              murderWeapon: { enum: murderWeaponList },
               hadLegalComplaints: { type: "boolean" },
               wasJudicialized: { type: "boolean" }, //habia alguna medida judicial
-              judicialMeasures: {type: "array", items: { enum:judicialMeasures }},
+              judicialMeasures: { type: "array", items: { enum: judicialMeasures } },
+              victimBondAggressor: { enum: victimBondAggressor },
               isRape: { type: "boolean" },
               isRelatedToOrganizedCrime: { type: "boolean" },
               organizedCrimeNotes: { type: "string" },
               generalNotes: { type: "string" },
-              newsLinks: { type: "array", items: { type: "string" } ,   minItems: 1, "uniqueItems": true},
-              
+              newsLinks: { type: "array", items: { type: "string" }, minItems: 1, "uniqueItems": true },
+
 
 
               victim: {
@@ -62,8 +63,8 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum:genderList },              
-                  nationality: { enum:nationalityList },
+                  gender: { enum: genderList },
+                  nationality: { enum: nationalityList },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
                   isNativePeople: { type: "boolean" },
@@ -71,8 +72,7 @@ router.operation({
                   hasDisabillity: { type: "boolean" },
                   occupation: { type: "string" },
                   hasChildren: { type: "boolean" },
-                  numberOfChildren: {type: "integer"},
-                  victimBondAggressor: {enum:victimBondAggressor},
+                  numberOfChildren: { type: "integer" },
                 },
                 additionalProperties: false,
               },
@@ -82,13 +82,13 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum:genderList },
+                  gender: { enum: genderList },
                   hasLegalComplaintHistory: { type: "boolean" },
                   hasPreviousCases: { type: "boolean" },
                   wasInPrison: { type: "boolean" },
                   behaviourPostCase: { enum: behavioursPostCaseList },
                   belongsSecurityForce: { type: "boolean" },
-                  securityForce: {enum:securityForcesList},
+                  securityForce: { enum: securityForcesList },
                 },
                 additionalProperties: false,
               },
