@@ -14,6 +14,7 @@ const feedItemsQuery = () => feedItemsTable()
     publishedAt: "feedItems.publishedAt",
     title: "feedItems.title",
     link: "feedItems.link",
+    snippet: "feedItems.snippet",
     isDone: "feedItems.isDone",
     isIrrelevant: "feedItems.isIrrelevant",
     assignedUserId: "feedItems.assignedUserId",
@@ -62,6 +63,7 @@ export function feedItemFromRss(rssFeed, rssItem) {
     feedItemKey: rssItem.id,
     title: removeHtmlTags(rssItem.title),
     link: extractUrlFromGoogleUrl(rssItem.link),
+    snippet: rssItem.contentSnippet,
   };
 }
 
