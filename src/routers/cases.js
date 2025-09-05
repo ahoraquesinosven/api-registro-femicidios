@@ -1,10 +1,10 @@
-import { OpenApiRouter, securitySchemes } from "../openapi.js";
+import {OpenApiRouter} from "../openapi/index.js";
+import {securitySchemes} from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
 import provinces from "../data/provinces.js";
 import geographicLocationsList from "../data/geographicLocations.js";
 import casePlaceList from "../data/places.js";
 import murderWeaponList from "../data/murderWeapons.js";
-import genderList from "../data/genders.js";
 import nationalityList from "../data/nationalities.js";
 import behavioursPostCaseList from "../data/behavioursPostCase.js";
 import momentOfDayList from "../data/momentsOfDay.js";
@@ -31,6 +31,7 @@ router.operation({
     summary: "Create a new case",
     security: [securitySchemes.oauth],
     requestBody: {
+      required: true,
       content: {
         "application/json": {
           schema: {
@@ -63,8 +64,8 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum: genderList },
-                  nationality: { enum: nationalityList },
+                  gender: { "$ref": "#/components/schemas/Gender" },
+                  nationality: { enum:nationalityList },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
                   isNativePeople: { type: "boolean" },
@@ -82,7 +83,7 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum: genderList },
+                  gender: { "$ref": "#/components/schemas/Gender" },
                   hasLegalComplaintHistory: { type: "boolean" },
                   hasPreviousCases: { type: "boolean" },
                   wasInPrison: { type: "boolean" },
@@ -102,9 +103,7 @@ router.operation({
       201: {
         description: "Case created successfully",
       },
-      422: {
-        description: "Bad request",
-      },
+      422: { "$ref": "#/components/responses/ValidationError" },
     },
   },
   handlers: [
