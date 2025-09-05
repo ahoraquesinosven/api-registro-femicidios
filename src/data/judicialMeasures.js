@@ -1,4 +1,4 @@
-const victimBondAggressor = [
+const judicialMeasures = [
 "ALIMENTOS_PROVISIONALES",
 "ASISTENCIA_PSICOLOGICA",
 "BOTON_ANTIPANICO",
@@ -16,4 +16,4 @@ const victimBondAggressor = [
 "OTRA"
 ];
 
-export default victimBondAggressor;
+export default judicialMeasures;
