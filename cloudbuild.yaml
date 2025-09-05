@@ -1,6 +1,3 @@
-substitutions:
-  _SERVICE_NAME: api-registro
-
 steps:
   # Build the production docker image
   - name: 'gcr.io/cloud-builders/docker'
