@@ -1,9 +1,7 @@
 import config from "../config/values.js";
 import { securitySchemes } from "./securitySchemes.js";
-import { ValidationErrorResponse } from "./validations.js";
 import schemas from "./schemas.js";
-
-
+import responses from "./responses.js";
 
 export const openApiDocument = {
   openapi: "3.1.0",
@@ -20,10 +18,7 @@ export const openApiDocument = {
       internal: securitySchemes.internal.component,
     },
 
-    responses: {
-      ValidationError: ValidationErrorResponse,
-    },
-
+    responses,
     schemas,
   },
   paths: {},

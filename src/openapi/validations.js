@@ -1,29 +1,24 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
+import localize from 'ajv-i18n';
+import schemas from './schemas.js';
 
-const ajv = new Ajv({coerceTypes: true, allErrors: true});
+const ajv = new Ajv({
+  coerceTypes: true,
+  allErrors: true,
+  strict: false,
+});
 addFormats(ajv);
 
-export const ValidationErrorResponse = {
-  description: "Bad request",
-  content: {
-    "application/json": {
-      schema: {
-        type: "array",
-        items: {
-          type: "object",
-          required: [ "type", "path", "message" ],
+function validateWithOpenAPISchema(data, schema) {
+  const jsonSchema = {...schema, components: { schemas }};
+  if (!ajv.validate(jsonSchema, data)) {
+    localize.es(ajv.errors);
+    return { valid: false, errors: ajv.errors }
+  }
 
-          properties: {
-            type: { type: "string", enum: [ "parameter", "body" ] },
-            path: { type: "string", },
-            message: { type: "string", },
-          },
-        }
-      },
-    },
-  },
-};
+  return { valid: true };
+}
 
 const getParameterValue = (ctx, paramSpec) => {
   switch (paramSpec.in) {
@@ -50,10 +45,9 @@ const validateParameter = (ctx, paramSpec) => {
   }
 
   if (paramValue) {
-    const validate = ajv.compile(paramSpec.schema);
-
-    if (!validate(paramValue)) {
-      return validate.errors.map((error) => ({
+    const { valid, errors } = validateWithOpenAPISchema(paramValue, paramSpec.schema)
+    if (!valid) {
+      return errors.map((error) => ({
         type: "parameter",
         path: paramSpec.name,
         message: error.message,
@@ -78,7 +72,7 @@ const validateBody = (request, bodySpec) => {
     }];
   }
 
-  if (bodySpec.required || !request.body) {
+  if (bodySpec.required && !request.body) {
     return [{
       type: "body",
       message: "is required",
@@ -86,11 +80,9 @@ const validateBody = (request, bodySpec) => {
   }
 
   if (request.body) {
-    const validate = ajv.compile(mediaTypeSpec.schema);
-
-    if (!validate(request.body)) {
-
-      return validate.errors.map((error) => ({
+    const { valid, errors } = validateWithOpenAPISchema(request.body, mediaTypeSpec.schema);
+    if (!valid) {
+      return errors.map((error) => ({
         type: "body",
         path: error.instancePath,
         message: error.message,

@@ -24,10 +24,10 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
-            required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "category"],
+            required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
 
             properties: {
-              category: { $ref: "#/components/schemas/CaseCategory" },
+              caseCategory: { $ref: "#/components/schemas/CaseCategory" },
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { $ref: "#/components/schemas/CaseMomentOfDay" },
               province: { $ref: "#/components/schemas/Province" },
@@ -91,7 +91,7 @@ router.operation({
       201: {
         description: "Case created successfully",
       },
-      422: { $ref: "#/components/responses/ValidationError" },
+      422: { $ref: "#/components/responses/ValidationErrorResponse" },
     },
   },
   handlers: [
