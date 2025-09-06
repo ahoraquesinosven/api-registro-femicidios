@@ -13,7 +13,7 @@ steps:
   # Deploy admin tools to the cloud run job
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
-      'run', 'jobs', 'deploy', '${_SERVICE_NAME}-$SHORT_SHA',
+      'run', 'jobs', 'deploy', '${_CLOUD_RUN_SERVICE_NAME}-$SHORT_SHA',
       '--region', 'us-central1',
       '--image', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA',
       '--set-env-vars', 'SERVER_CANNONICAL_ORIGIN=${_SERVER_CANNONICAL_ORIGIN}',
@@ -30,7 +30,7 @@ steps:
 
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
-      'run', 'jobs', 'execute', '${_SERVICE_NAME}-$SHORT_SHA',
+      'run', 'jobs', 'execute', '${_CLOUD_RUN_SERVICE_NAME}-$SHORT_SHA',
       '--args', "node_modules/.bin/knex,migrate:latest",
       '--region', 'us-central1',
       '--wait',
@@ -39,7 +39,7 @@ steps:
   # Deploy to cloud run
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
-      'run', 'deploy', '${_SERVICE_NAME}',
+      'run', 'deploy', '${_CLOUD_RUN_SERVICE_NAME}',
       '--region', 'us-central1',
       '--image', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA',
       '--allow-unauthenticated',

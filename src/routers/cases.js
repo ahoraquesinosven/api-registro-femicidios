@@ -1,18 +1,6 @@
-import { OpenApiRouter, securitySchemes } from "../openapi.js";
+import {OpenApiRouter} from "../openapi/index.js";
+import {securitySchemes} from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
-import provinces from "../data/provinces.js";
-import geographicLocationsList from "../data/geographicLocations.js";
-import casePlaceList from "../data/places.js";
-import murderWeaponList from "../data/murderWeapons.js";
-import genderList from "../data/genders.js";
-import nationalityList from "../data/nationalities.js";
-import behavioursPostCaseList from "../data/behavioursPostCase.js";
-import momentOfDayList from "../data/momentsOfDay.js";
-import victimBondAggressor from "../data/victimBondAggressor.js";
-import caseCategories from "../data/caseCategories.js";
-import judicialMeasures from "../data/judicialMeasures.js"
-import securityForcesList from "../data/securityForces.js";
-
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
@@ -31,6 +19,7 @@ router.operation({
     summary: "Create a new case",
     security: [securitySchemes.oauth],
     requestBody: {
+      required: true,
       content: {
         "application/json": {
           schema: {
@@ -38,18 +27,18 @@ router.operation({
             required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
 
             properties: {
-              caseCategory: { enum: caseCategories },
+              caseCategory: { $ref: "#/components/schemas/CaseCategory" },
               occurredAt: { type: "string", format: "date" },
-              momentOfDay: { enum: momentOfDayList },
-              province: { enum: provinces },
+              momentOfDay: { $ref: "#/components/schemas/CaseMomentOfDay" },
+              province: { $ref: "#/components/schemas/Province" },
               location: { type: "string", minLength: 5 },
-              geographicLocation: { enum: geographicLocationsList },
-              place: { enum: casePlaceList },
-              murderWeapon: { enum: murderWeaponList },
+              geographicLocation: { $ref: "#/components/schemas/CaseGeographicLocation" },
+              place: { $ref: "#/components/schemas/CasePlace" },
+              murderWeapon: { $ref: "#/components/schemas/CaseMurderWeapon" },
               hadLegalComplaints: { type: "boolean" },
-              wasJudicialized: { type: "boolean" }, //habia alguna medida judicial
-              judicialMeasures: { type: "array", items: { enum: judicialMeasures } },
-              victimBondAggressor: { enum: victimBondAggressor },
+              wasJudicialized: { type: "boolean" },
+              judicialMeasures: { type: "array", items: { $ref: "#/components/schemas/CaseJudicialMeasure" } },
+              victimBondAggressor: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
               isRape: { type: "boolean" },
               isRelatedToOrganizedCrime: { type: "boolean" },
               organizedCrimeNotes: { type: "string" },
@@ -63,8 +52,8 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum: genderList },
-                  nationality: { enum: nationalityList },
+                  gender: { $ref: "#/components/schemas/Gender" },
+                  nationality: { $ref: "#/components/schemas/Nationality" },
                   isSexualWorker: { type: "boolean" },
                   isMissingPerson: { type: "boolean" },
                   isNativePeople: { type: "boolean" },
@@ -82,13 +71,13 @@ router.operation({
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
-                  gender: { enum: genderList },
+                  gender: { $ref: "#/components/schemas/Gender" },
                   hasLegalComplaintHistory: { type: "boolean" },
                   hasPreviousCases: { type: "boolean" },
                   wasInPrison: { type: "boolean" },
-                  behaviourPostCase: { enum: behavioursPostCaseList },
+                  behaviourPostCase: { $ref: "#/components/schemas/CaseAggressorBehaviorPostCase" },
                   belongsSecurityForce: { type: "boolean" },
-                  securityForce: { enum: securityForcesList },
+                  securityForce: { $ref: "#/components/schemas/CaseAggressorSecurityForce" },
                 },
                 additionalProperties: false,
               },
@@ -102,9 +91,7 @@ router.operation({
       201: {
         description: "Case created successfully",
       },
-      422: {
-        description: "Bad request",
-      },
+      422: { $ref: "#/components/responses/ValidationErrorResponse" },
     },
   },
   handlers: [

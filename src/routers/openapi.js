@@ -1,5 +1,5 @@
 import Router from "@koa/router";
-import { openApiDocument } from "../openapi.js";
+import { openApiDocument } from "../openapi/document.js";
 
 const router = new Router({
   prefix: "/v1",
