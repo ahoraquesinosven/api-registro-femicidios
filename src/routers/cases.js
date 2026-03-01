@@ -28,6 +28,8 @@ router.operation({
 
             properties: {
               caseCategory: { $ref: "#/components/schemas/CaseCategory" },
+              wasItAnAttempt: { type: "boolean" },
+              isInsufficientDataOrUnderInvestigation: { type: "boolean" },
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { $ref: "#/components/schemas/CaseMomentOfDay" },
               province: { $ref: "#/components/schemas/Province" },
@@ -36,6 +38,7 @@ router.operation({
               place: { $ref: "#/components/schemas/CasePlace" },
               murderWeapon: { $ref: "#/components/schemas/CaseMurderWeapon" },
               hadLegalComplaints: { type: "boolean" },
+              totalLegalComplaints: {type: "integer"},
               wasJudicialized: { type: "boolean" },
               judicialMeasures: { type: "array", items: { $ref: "#/components/schemas/CaseJudicialMeasure" } },
               victimBondAggressor: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
@@ -111,6 +114,8 @@ router.operation({
         await trx("cases").insert({
           ...pick(body, [
             "caseCategory",
+            "wasItAnAttempt",
+            "isInsufficientDataOrUnderInvestigation",
             "occurredAt",
             "momentOfDay",
             "province",
@@ -121,6 +126,7 @@ router.operation({
             "wasJudicialized",
             "judicialMeasures",
             "hadLegalComplaints",
+            "totalLegalComplaints",
             "isRape",
             "isRelatedToOrganizedCrime",
             "organizedCrimeNotes",
