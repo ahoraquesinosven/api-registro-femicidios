@@ -65,6 +65,7 @@ router.operation({
                   occupation: { type: "string" },
                   hasChildren: { type: "boolean" },
                   numberOfChildren: { type: "integer" },
+                  ageOfChildren: { type: "array", items: { type: "number" }, minItems: 0, "uniqueItems": false },
                 },
                 additionalProperties: false,
               },
