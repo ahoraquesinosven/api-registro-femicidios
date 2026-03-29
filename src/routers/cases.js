@@ -1,5 +1,5 @@
-import {OpenApiRouter} from "../openapi/index.js";
-import {securitySchemes} from "../openapi/securitySchemes.js";
+import { OpenApiRouter } from "../openapi/index.js";
+import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
 
 const router = new OpenApiRouter({
@@ -25,6 +25,17 @@ router.operation({
           schema: {
             type: "object",
             required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
+            dependentRequired: {
+              "organizedCrimeNotes": ["isRelatedToOrganizedCrime"],
+              "numberOfChildren": ["hasChildren"],
+              "ageOfChildren": ["hasChildren", "numberOfChildren"],
+              "securityForce": ["belongsSecurityForce"],
+              "totalLegalComplaints": ["hadLegalComplaints"],
+              "wasJudicialized": ["hadLegalComplaints"],
+              "judicialMeasures": ["wasJudicialized"],
+            },
+
+
 
             properties: {
               caseCategory: { $ref: "#/components/schemas/CaseCategory" },
@@ -38,8 +49,8 @@ router.operation({
               place: { $ref: "#/components/schemas/CasePlace" },
               murderWeapon: { $ref: "#/components/schemas/CaseMurderWeapon" },
               hadLegalComplaints: { type: "boolean" },
-              totalLegalComplaints: {type: "integer"},
-              wasJudicialized: { type: "boolean" },
+              totalLegalComplaints: { type: "integer" },
+              wasJudicialized: { type: "boolean" }, //¿Había alguna medida judicial?
               judicialMeasures: { type: "array", items: { $ref: "#/components/schemas/CaseJudicialMeasure" } },
               victimBondAggressor: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
               isRape: { type: "boolean" },
@@ -102,6 +113,21 @@ router.operation({
     async (ctx) => {
       const body = ctx.request.body;
       //TODO validaciones mas complejas
+
+      if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
+        const error =
+          [
+            {
+              "type": "body",
+              "path": "victim.numberOfChildren",
+              "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas"
+            }
+          ]
+        ctx.status = 422;
+        ctx.body = error;
+        return;
+      }
+
 
       await knex.transaction(async (trx) => {
         const [{ id: victimId }] = await trx("victims")
