@@ -22,6 +22,10 @@ Once your image is running, run migrations via `docker compose run api node_modu
 
 To check the API open swagger in http://localhost:8081/ 
 
+## Running only API or with Frontend
+- To run just the API, remember to go to `.env` file and comment the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb`
+- To run the API and the Frontend together, go to `.env` file and review the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb` is NOT commented.
+
 ## License
 
 See the [LICENSE](./LICENSE) file for license rights and limitations (MIT).
