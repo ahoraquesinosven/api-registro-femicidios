@@ -1,9 +1,9 @@
-import Ajv from 'ajv';
+import Ajv2019 from "ajv/dist/2019.js"
 import addFormats from 'ajv-formats';
 import localize from 'ajv-i18n';
 import schemas from './schemas.js';
 
-const ajv = new Ajv({
+const ajv = new Ajv2019({
   coerceTypes: true,
   allErrors: true,
   strict: false,

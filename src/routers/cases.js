@@ -26,16 +26,11 @@ router.operation({
             type: "object",
             required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
             dependentRequired: {
-              "organizedCrimeNotes": ["isRelatedToOrganizedCrime"],
-              "numberOfChildren": ["hasChildren"],
-              "ageOfChildren": ["hasChildren", "numberOfChildren"],
-              "securityForce": ["belongsSecurityForce"],
-              "totalLegalComplaints": ["hadLegalComplaints"],
-              "wasJudicialized": ["hadLegalComplaints"],
-              "judicialMeasures": ["wasJudicialized"],
+              organizedCrimeNotes: ["isRelatedToOrganizedCrime"],
+              totalLegalComplaints: ["hadLegalComplaints"],
+              wasJudicialized: ["hadLegalComplaints"],
+              judicialMeasures: ["wasJudicialized"],
             },
-
-
 
             properties: {
               caseCategory: { $ref: "#/components/schemas/CaseCategory" },
@@ -63,6 +58,10 @@ router.operation({
 
               victim: {
                 type: "object",
+                dependentRequired: {
+                  numberOfChildren: ["hasChildren"],
+                  ageOfChildren: ["hasChildren", "numberOfChildren"],
+                },
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
@@ -83,6 +82,9 @@ router.operation({
 
               aggressor: {
                 type: "object",
+                dependentRequired: {
+                  securityForce: ["belongsSecurityForce"],
+                },
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
@@ -112,19 +114,29 @@ router.operation({
   handlers: [
     async (ctx) => {
       const body = ctx.request.body;
-      //TODO validaciones mas complejas
+
+      // More complex validations
+      const errors = [];
 
       if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
-        const error =
-          [
-            {
-              "type": "body",
-              "path": "victim.numberOfChildren",
-              "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas"
-            }
-          ]
+        errors.push({
+          "type": "body",
+          "path": "victim.numberOfChildren",
+          "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
+        });
+      }
+
+      if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
+        errors.push({
+          "type": "body",
+          "path": "isRelatedToOrganizedCrime",
+          "message": "Debe ser verdadero is hay notas de crimen organizado",
+        });
+      }
+
+      if (errors) {
         ctx.status = 422;
-        ctx.body = error;
+        ctx.body = errors;
         return;
       }
 
