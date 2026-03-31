@@ -1,5 +1,5 @@
-import {OpenApiRouter} from "../openapi/index.js";
-import {securitySchemes} from "../openapi/securitySchemes.js";
+import { OpenApiRouter } from "../openapi/index.js";
+import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
 
 const router = new OpenApiRouter({
@@ -25,6 +25,12 @@ router.operation({
           schema: {
             type: "object",
             required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
+            dependentRequired: {
+              organizedCrimeNotes: ["isRelatedToOrganizedCrime"],
+              totalLegalComplaints: ["hadLegalComplaints"],
+              wasJudicialized: ["hadLegalComplaints"],
+              judicialMeasures: ["wasJudicialized"],
+            },
 
             properties: {
               caseCategory: { $ref: "#/components/schemas/CaseCategory" },
@@ -38,8 +44,8 @@ router.operation({
               place: { $ref: "#/components/schemas/CasePlace" },
               murderWeapon: { $ref: "#/components/schemas/CaseMurderWeapon" },
               hadLegalComplaints: { type: "boolean" },
-              totalLegalComplaints: {type: "integer"},
-              wasJudicialized: { type: "boolean" },
+              totalLegalComplaints: { type: "integer" },
+              wasJudicialized: { type: "boolean" }, //¿Había alguna medida judicial?
               judicialMeasures: { type: "array", items: { $ref: "#/components/schemas/CaseJudicialMeasure" } },
               victimBondAggressor: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
               isRape: { type: "boolean" },
@@ -52,6 +58,10 @@ router.operation({
 
               victim: {
                 type: "object",
+                dependentRequired: {
+                  numberOfChildren: ["hasChildren"],
+                  ageOfChildren: ["hasChildren", "numberOfChildren"],
+                },
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
@@ -72,6 +82,9 @@ router.operation({
 
               aggressor: {
                 type: "object",
+                dependentRequired: {
+                  securityForce: ["belongsSecurityForce"],
+                },
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
@@ -101,7 +114,92 @@ router.operation({
   handlers: [
     async (ctx) => {
       const body = ctx.request.body;
-      //TODO validaciones mas complejas
+
+      // More complex validations
+      const errors = [];
+
+//Case validations
+      if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
+        errors.push({
+          "type": "body",
+          "path": "victim.numberOfChildren",
+          "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
+        });
+      }
+
+      if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
+        errors.push({
+          "type": "body",
+          "path": "isRelatedToOrganizedCrime",
+          "message": "Debe ser verdadero si hay notas de crimen organizado",
+        });
+      }
+
+      if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
+        errors.push({
+          "type": "body",
+          "path": "organizedCrimeNotes",
+          "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
+        });
+      }
+
+      if (body.totalLegalComplaints && !body.hadLegalComplaints) {
+        errors.push({
+          "type": "body",
+          "path": "hadLegalComplaints",
+          "message": "Debe ser verdadero is se completo la cantidad de denuncias",
+        });
+      }
+
+      if (body.wasJudicialized && !body.hadLegalComplaints) {
+        errors.push({
+          "type": "body",
+          "path": "hadLegalComplaints",
+          "message": "Debe ser verdadero si tiene medidas judiciales",
+        });
+      }
+
+      if (body.judicialMeasures && !body.wasJudicialized) {
+        errors.push({
+          "type": "body",
+          "path": "wasJudicialized",
+          "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
+        });
+      }
+
+//victim validations
+      if (body.victim.numberOfChildren && !body.victim.hasChildren) {
+        errors.push({
+          "type": "body",
+          "path": "victim.hasChildren",
+          "message": "Debe ser verdadero si tiene al menos un hijx",
+        });
+      }
+
+      if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
+        errors.push({
+          "type": "body",
+          "path": "victim.hasChildren",
+          "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
+        });
+      }
+
+//aggresor validations
+      if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
+        errors.push({
+          "type": "body",
+          "path": "aggressor.belongsSecurityForce",
+          "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
+        });
+      }
+
+
+      if (errors.length > 0) {
+        ctx.status = 422;
+        ctx.body = errors;
+        return;
+      }
+
 
       await knex.transaction(async (trx) => {
         const [{ id: victimId }] = await trx("victims")
