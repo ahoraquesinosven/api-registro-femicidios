@@ -119,18 +119,10 @@ router.operation({
       const errors = [];
 
 //Case validations
-      if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
-        errors.push({
-          "type": "body",
-          "path": "victim.numberOfChildren",
-          "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
-        });
-      }
-
       if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
         errors.push({
           "type": "body",
-          "path": "isRelatedToOrganizedCrime",
+          "path": "/isRelatedToOrganizedCrime",
           "message": "Debe ser verdadero si hay notas de crimen organizado",
         });
       }
@@ -138,15 +130,23 @@ router.operation({
       if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
         errors.push({
           "type": "body",
-          "path": "organizedCrimeNotes",
+          "path": "/organizedCrimeNotes",
           "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
+        });
+      }
+
+      if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
+        errors.push({
+          "type": "body",
+          "path": "/victim.numberOfChildren",
+          "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
         });
       }
 
       if (body.totalLegalComplaints && !body.hadLegalComplaints) {
         errors.push({
           "type": "body",
-          "path": "hadLegalComplaints",
+          "path": "/hadLegalComplaints",
           "message": "Debe ser verdadero is se completo la cantidad de denuncias",
         });
       }
@@ -154,7 +154,7 @@ router.operation({
       if (body.wasJudicialized && !body.hadLegalComplaints) {
         errors.push({
           "type": "body",
-          "path": "hadLegalComplaints",
+          "path": "/hadLegalComplaints",
           "message": "Debe ser verdadero si tiene medidas judiciales",
         });
       }
@@ -162,7 +162,7 @@ router.operation({
       if (body.judicialMeasures && !body.wasJudicialized) {
         errors.push({
           "type": "body",
-          "path": "wasJudicialized",
+          "path": "/wasJudicialized",
           "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
         });
       }
@@ -171,7 +171,7 @@ router.operation({
       if (body.victim.numberOfChildren && !body.victim.hasChildren) {
         errors.push({
           "type": "body",
-          "path": "victim.hasChildren",
+          "path": "/victim.hasChildren",
           "message": "Debe ser verdadero si tiene al menos un hijx",
         });
       }
@@ -179,7 +179,7 @@ router.operation({
       if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
         errors.push({
           "type": "body",
-          "path": "victim.hasChildren",
+          "path": "/victim.hasChildren",
           "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
         });
       }
@@ -188,7 +188,7 @@ router.operation({
       if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
         errors.push({
           "type": "body",
-          "path": "aggressor.belongsSecurityForce",
+          "path": "/aggressor.belongsSecurityForce",
           "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
         });
       }
