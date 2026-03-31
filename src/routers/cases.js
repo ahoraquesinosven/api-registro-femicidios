@@ -118,6 +118,7 @@ router.operation({
       // More complex validations
       const errors = [];
 
+//Case validations
       if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
         errors.push({
           "type": "body",
@@ -130,11 +131,70 @@ router.operation({
         errors.push({
           "type": "body",
           "path": "isRelatedToOrganizedCrime",
-          "message": "Debe ser verdadero is hay notas de crimen organizado",
+          "message": "Debe ser verdadero si hay notas de crimen organizado",
         });
       }
 
-      if (errors) {
+      if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
+        errors.push({
+          "type": "body",
+          "path": "organizedCrimeNotes",
+          "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
+        });
+      }
+
+      if (body.totalLegalComplaints && !body.hadLegalComplaints) {
+        errors.push({
+          "type": "body",
+          "path": "hadLegalComplaints",
+          "message": "Debe ser verdadero is se completo la cantidad de denuncias",
+        });
+      }
+
+      if (body.wasJudicialized && !body.hadLegalComplaints) {
+        errors.push({
+          "type": "body",
+          "path": "hadLegalComplaints",
+          "message": "Debe ser verdadero si tiene medidas judiciales",
+        });
+      }
+
+      if (body.judicialMeasures && !body.wasJudicialized) {
+        errors.push({
+          "type": "body",
+          "path": "wasJudicialized",
+          "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
+        });
+      }
+
+//victim validations
+      if (body.victim.numberOfChildren && !body.victim.hasChildren) {
+        errors.push({
+          "type": "body",
+          "path": "victim.hasChildren",
+          "message": "Debe ser verdadero si tiene al menos un hijx",
+        });
+      }
+
+      if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
+        errors.push({
+          "type": "body",
+          "path": "victim.hasChildren",
+          "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
+        });
+      }
+
+//aggresor validations
+      if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
+        errors.push({
+          "type": "body",
+          "path": "aggressor.belongsSecurityForce",
+          "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
+        });
+      }
+
+
+      if (errors.length > 0) {
         ctx.status = 422;
         ctx.body = errors;
         return;
