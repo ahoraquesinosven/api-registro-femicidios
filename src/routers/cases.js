@@ -58,10 +58,6 @@ router.operation({
 
               victim: {
                 type: "object",
-                dependentRequired: {
-                  numberOfChildren: ["hasChildren"],
-                  ageOfChildren: ["hasChildren", "numberOfChildren"],
-                },
                 properties: {
                   fullName: { type: "string", minLength: 5 },
                   age: { type: "integer" },
@@ -135,7 +131,7 @@ router.operation({
         });
       }
 
-      if (body.victim.numberOfChildren < body.victim.ageOfChildren.length) {
+      if (body.victim.ageOfChildren && (body.victim.numberOfChildren < body.victim.ageOfChildren.length)) {
         errors.push({
           "type": "body",
           "path": "/victim.numberOfChildren",
