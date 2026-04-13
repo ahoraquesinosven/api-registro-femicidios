@@ -24,7 +24,7 @@ router.operation({
         "application/json": {
           schema: {
             type: "object",
-            required: ["occurredAt", "province", "location", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
+            required: ["occurredAt", "province", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
             dependentRequired: {
               organizedCrimeNotes: ["isRelatedToOrganizedCrime"],
               totalLegalComplaints: ["hadLegalComplaints"],
@@ -39,7 +39,7 @@ router.operation({
               occurredAt: { type: "string", format: "date" },
               momentOfDay: { $ref: "#/components/schemas/CaseMomentOfDay" },
               province: { $ref: "#/components/schemas/Province" },
-              location: { type: "string", minLength: 5 },
+              location: { type: "string"},
               geographicLocation: { $ref: "#/components/schemas/CaseGeographicLocation" },
               place: { $ref: "#/components/schemas/CasePlace" },
               murderWeapon: { $ref: "#/components/schemas/CaseMurderWeapon" },
