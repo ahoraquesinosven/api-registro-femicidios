@@ -116,7 +116,7 @@ router.operation({
   handlers: [
     async (ctx) => {
       const body = ctx.request.body;
-      const errors = caseValidations(body);  
+      const errors = caseValidations(body);
 
       if (errors.length > 0) {
         ctx.status = 422;
@@ -212,6 +212,98 @@ router.operation({
         );
 
       ctx.body = cases;
+    },
+  ],
+});
+
+router.operation({
+  method: "put",
+  relativePath: "/{case_id}",
+  spec: {
+    tags: ["cases"],
+    summary: "Update a case",
+    security: [securitySchemes.oauth],
+    parameters: [{
+      in: "path",
+      name: "case_id",
+      required: true,
+      description: "ID of the case",
+      schema: {
+        type: "integer",
+        minimum: 1
+      }
+    }],
+
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/Case" },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Case updated successfully",
+      },
+      422: { $ref: "#/components/responses/ValidationErrorResponse" },
+    },
+  },
+  handlers: [
+    async (ctx) => {
+      const body = ctx.request.body;
+      const errors = caseValidations(body);
+
+      if (errors.length > 0) {
+        ctx.status = 422;
+        ctx.body = errors;
+        return;
+      }
+
+      //usar case_id para traer victimID y aggresorID..usdo knex
+
+      const ids = await knex('cases').where('id', ctx.params.case_id).select("victimId", "aggressorId");
+      console.log(ids)
+
+      //actualizar haciendo UPDATE , no INSERT
+      await knex.transaction(async (trx) => {
+        await trx("victims")
+          .where('id', ids[0].victimId)
+          .update(body.victim);
+
+        await trx("aggressors")
+          .where('id', ids[0].aggressorId)
+          .update(body.aggressor);
+
+        // await trx("cases").update({
+        //   ...pick(body, [
+        //     "caseCategory",
+        //     "wasItAnAttempt",
+        //     "isInsufficientDataOrUnderInvestigation",
+        //     "occurredAt",
+        //     "momentOfDay",
+        //     "province",
+        //     "location",
+        //     "geographicLocation",
+        //     "place",
+        //     "murderWeapon",
+        //     "wasJudicialized",
+        //     "judicialMeasures",
+        //     "hadLegalComplaints",
+        //     "totalLegalComplaints",
+        //     "isRape",
+        //     "isRelatedToOrganizedCrime",
+        //     "organizedCrimeNotes",
+        //     "generalNotes",
+        //     "newsLinks",
+        //     "victimBondAggressor",
+        //   ]),
+        //   ids[0].aggressorId,
+        //   ids[0].victimId,
+        // });
+      });
+
+      ctx.status = 201;
     },
   ],
 });
