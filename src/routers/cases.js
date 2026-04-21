@@ -260,12 +260,10 @@ router.operation({
         return;
       }
 
-      //usar case_id para traer victimID y aggresorID..usdo knex
-
       const ids = await knex('cases').where('id', ctx.params.case_id).select("victimId", "aggressorId");
+     //remover el console log
       console.log(ids)
 
-      //actualizar haciendo UPDATE , no INSERT
       await knex.transaction(async (trx) => {
         await trx("victims")
           .where('id', ids[0].victimId)
@@ -275,32 +273,32 @@ router.operation({
           .where('id', ids[0].aggressorId)
           .update(body.aggressor);
 
-        // await trx("cases").update({
-        //   ...pick(body, [
-        //     "caseCategory",
-        //     "wasItAnAttempt",
-        //     "isInsufficientDataOrUnderInvestigation",
-        //     "occurredAt",
-        //     "momentOfDay",
-        //     "province",
-        //     "location",
-        //     "geographicLocation",
-        //     "place",
-        //     "murderWeapon",
-        //     "wasJudicialized",
-        //     "judicialMeasures",
-        //     "hadLegalComplaints",
-        //     "totalLegalComplaints",
-        //     "isRape",
-        //     "isRelatedToOrganizedCrime",
-        //     "organizedCrimeNotes",
-        //     "generalNotes",
-        //     "newsLinks",
-        //     "victimBondAggressor",
-        //   ]),
-        //   ids[0].aggressorId,
-        //   ids[0].victimId,
-        // });
+        await trx("cases")
+          .where('id', ctx.params.case_id)
+          .update({
+            ...pick(body, [
+              "caseCategory",
+              "wasItAnAttempt",
+              "isInsufficientDataOrUnderInvestigation",
+              "occurredAt",
+              "momentOfDay",
+              "province",
+              "location",
+              "geographicLocation",
+              "place",
+              "murderWeapon",
+              "wasJudicialized",
+              "judicialMeasures",
+              "hadLegalComplaints",
+              "totalLegalComplaints",
+              "isRape",
+              "isRelatedToOrganizedCrime",
+              "organizedCrimeNotes",
+              "generalNotes",
+              "newsLinks",
+              "victimBondAggressor",
+            ]),
+          });
       });
 
       ctx.status = 201;
