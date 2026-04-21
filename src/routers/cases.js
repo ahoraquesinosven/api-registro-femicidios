@@ -231,7 +231,7 @@ router.operation({
               items: {
                 type: "object",
                 required: [
-                  "id", "occurredAt", "province", "location", "victim", "aggressor", "caseCategory",
+                  "id", "occurredAt", "province", "victim", "aggressor", "caseCategory",
                 ],
                 properties: {
                   id: {type: "integer"},
@@ -297,6 +297,7 @@ router.operation({
             builder.where("cases.victimBondAggressor", ctx.query.victimBondAggressor);
           }
         })
+        .orderBy("occurredAt", "asc")
         .select({
           id: "cases.id",
           caseCategory: "cases.caseCategory",
