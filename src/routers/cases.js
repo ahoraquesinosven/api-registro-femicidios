@@ -174,7 +174,53 @@ router.operation({
     tags: ["cases"],
     summary: "List all cases",
     security: [securitySchemes.oauth],
-    parameters: [],
+    parameters: [
+      {
+        name: "fromDate",
+        in: "query",
+        schema: {type: "string", format: "date"},
+      },
+      {
+        name: "toDate",
+        in: "query",
+        schema: {type: "string", format: "date"},
+      },
+      {
+        name: "province",
+        in: "query",
+        schema: {$ref: "#/components/schemas/Province"},
+      },
+      {
+        name: "location",
+        in: "query",
+        schema: {type: "string"},
+      },
+      {
+        name: "caseCategory",
+        in: "query",
+        schema: {$ref: "#/components/schemas/CaseCategory"},
+      },
+      {
+        name: "victimFullName",
+        in: "query",
+        schema: {type: "string"},
+      },
+      {
+        name: "murderWeapon",
+        in: "query",
+        schema: {$ref: "#/components/schemas/CaseMurderWeapon"},
+      },
+      {
+        name: "aggressorFullName",
+        in: "query",
+        schema: {type: "string"},
+      },
+      {
+        name: "victimBondAggressor",
+        in: "query",
+        schema: {$ref: "#/components/schemas/CaseVictimBondAggressor"},
+      },
+    ],
     responses: {
       200: {
         description: "List of cases",
@@ -184,12 +230,31 @@ router.operation({
               type: "array",
               items: {
                 type: "object",
+                required: [
+                  "id", "occurredAt", "province", "victim", "aggressor", "caseCategory",
+                ],
                 properties: {
-                  id: { type: "integer" },
-                  victimName: { type: "string" },
-                  province: { type: "string" },
-                  location: { type: "string" },
-                  aggressor: { type: "string" },
+                  id: {type: "integer"},
+                  caseCategory: {$ref: "#/components/schemas/Case/properties/caseCategory"},
+                  occurredAt: {$ref: "#/components/schemas/Case/properties/occurredAt"},
+                  province: {$ref: "#/components/schemas/Case/properties/province"},
+                  location: {$ref: "#/components/schemas/Case/properties/location"},
+                  murderWeapon: {$ref: "#/components/schemas/Case/properties/location"},
+                  victimBondAggressor: {$ref: "#/components/schemas/CaseMurderWeapon"},
+                  victim: {
+                    type: "object",
+                    properties: {
+                      fullName: {$ref: "#/components/schemas/Case/properties/victim/properties/fullName"},
+                      age: {$ref: "#/components/schemas/Case/properties/victim/properties/age"},
+                    },
+                  },
+                  aggressor: {
+                    type: "object",
+                    properties: {
+                      fullName: {$ref: "#/components/schemas/Case/properties/aggressor/properties/fullName"},
+                      age: {$ref: "#/components/schemas/Case/properties/aggressor/properties/age"},
+                    },
+                  },
                 },
               },
             },
@@ -200,16 +265,70 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      const cases = await knex("cases")
+      const rows = await knex("cases")
         .join("victims", "cases.victimId", "victims.id")
         .join("aggressors", "cases.aggressorId", "aggressors.id")
-        .select(
-          "cases.id",
-          "victims.fullName as victimName",
-          "cases.province",
-          "cases.location",
-          "aggressors.fullName as aggressor",
-        );
+        .where((builder) => {
+          if (ctx.query.fromDate) {
+            builder.where("cases.occurredAt", ">=", ctx.query.fromDate);
+          }
+          if (ctx.query.toDate) {
+            builder.where("cases.occurredAt", "<", ctx.query.toDate);
+          }
+          if (ctx.query.province) {
+            builder.where("cases.province", ctx.query.province);
+          }
+          if (ctx.query.location) {
+            builder.whereRaw('unaccent("cases"."location") ILIKE unaccent(?)', `%${ctx.query.location}%`)
+          }
+          if (ctx.query.caseCategory) {
+            builder.where("cases.caseCategory", ctx.query.caseCategory);
+          }
+          if (ctx.query.victimFullName) {
+            builder.whereRaw('unaccent("victims"."fullName") ILIKE unaccent(?)', `%${ctx.query.victimFullName}%`)
+          }
+          if (ctx.query.murderWeapon) {
+            builder.where("cases.murderWeapon", ctx.query.murderWeapon);
+          }
+          if (ctx.query.aggressorFullName) {
+            builder.whereRaw('unaccent("aggressors"."fullName") ILIKE unaccent(?)', `%${ctx.query.aggressorFullName}%`)
+          }
+          if (ctx.query.victimBondAggressor) {
+            builder.where("cases.victimBondAggressor", ctx.query.victimBondAggressor);
+          }
+        })
+        .orderBy("occurredAt", "asc")
+        .select({
+          id: "cases.id",
+          caseCategory: "cases.caseCategory",
+          occurredAt: "cases.occurredAt",
+          province: "cases.province",
+          location: "cases.location",
+          murderWeapon: "cases.murderWeapon",
+          victimBondAggressor: "cases.victimBondAggressor",
+          victimFullName: "victims.fullName",
+          victimAge: "victims.age",
+          aggressorFullName: "aggressors.fullName",
+          aggressorAge: "aggressors.age"
+        });
+
+      const cases = rows.map((row) => ({
+        id: row.id,
+        caseCategory: row.caseCategory,
+        occurredAt: row.occurredAt,
+        province: row.province,
+        location: row.location,
+        murderWeapon: row.murderWeapon,
+        victimBondAggressor: row.victimBondAggressor,
+        victim: {
+          fullName: row.victimFullName,
+          age: row.victimAge,
+        },
+        aggressor: {
+          fullName: row.aggressorFullName,
+          age: row.aggressorAge,
+        },
+      }));
 
       ctx.body = cases;
     },
