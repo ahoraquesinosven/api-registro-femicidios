@@ -1,3 +1,4 @@
+import caseSchema from "../openapi/schemas/case.js"
 import allGenders from "../data/genders.js";
 import allProvinces from "../data/provinces.js";
 import allCaseCategories from "../data/caseCategories.js";
@@ -24,4 +25,5 @@ export default {
   CaseVictimBondAggressor: { enum: allVictimBondAggressors },
   CaseAggressorBehaviorPostCase: { enum: allCaseAggressorBehaviorsPostCase },
   CaseAggressorSecurityForce: { enum: allCaseAggressorSecurityForces },
+  Case: caseSchema,
 };

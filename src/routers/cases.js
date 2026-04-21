@@ -11,6 +11,86 @@ const pick = (obj, keys) =>
     keys.filter((k) => k in (obj || {})).map((k) => [k, obj[k]]),
   );
 
+const caseValidations = (body) => {
+  const errors = [];
+
+  if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
+    errors.push({
+      "type": "body",
+      "path": "/isRelatedToOrganizedCrime",
+      "message": "Debe ser verdadero si hay notas de crimen organizado",
+    });
+  }
+
+  if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
+    errors.push({
+      "type": "body",
+      "path": "/organizedCrimeNotes",
+      "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
+    });
+  }
+
+  if (body.victim.ageOfChildren && (body.victim.numberOfChildren < body.victim.ageOfChildren.length)) {
+    errors.push({
+      "type": "body",
+      "path": "/victim.numberOfChildren",
+      "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
+    });
+  }
+
+  if (body.totalLegalComplaints && !body.hadLegalComplaints) {
+    errors.push({
+      "type": "body",
+      "path": "/hadLegalComplaints",
+      "message": "Debe ser verdadero is se completo la cantidad de denuncias",
+    });
+  }
+
+  if (body.wasJudicialized && !body.hadLegalComplaints) {
+    errors.push({
+      "type": "body",
+      "path": "/hadLegalComplaints",
+      "message": "Debe ser verdadero si tiene medidas judiciales",
+    });
+  }
+
+  if (body.judicialMeasures && !body.wasJudicialized) {
+    errors.push({
+      "type": "body",
+      "path": "/wasJudicialized",
+      "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
+    });
+  }
+
+  //victim validations
+  if (body.victim.numberOfChildren && !body.victim.hasChildren) {
+    errors.push({
+      "type": "body",
+      "path": "/victim.hasChildren",
+      "message": "Debe ser verdadero si tiene al menos un hijx",
+    });
+  }
+
+  if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
+    errors.push({
+      "type": "body",
+      "path": "/victim.hasChildren",
+      "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
+    });
+  }
+
+  //aggresor validations
+  if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
+    errors.push({
+      "type": "body",
+      "path": "/aggressor.belongsSecurityForce",
+      "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
+    });
+  }
+
+  return errors;
+}
+
 router.operation({
   method: "post",
   relativePath: "/",
@@ -22,81 +102,7 @@ router.operation({
       required: true,
       content: {
         "application/json": {
-          schema: {
-            type: "object",
-            required: ["occurredAt", "province", "place", "newsLinks", "victim", "aggressor", "caseCategory"],
-            dependentRequired: {
-              organizedCrimeNotes: ["isRelatedToOrganizedCrime"],
-              totalLegalComplaints: ["hadLegalComplaints"],
-              wasJudicialized: ["hadLegalComplaints"],
-              judicialMeasures: ["wasJudicialized"],
-            },
-
-            properties: {
-              caseCategory: { $ref: "#/components/schemas/CaseCategory" },
-              wasItAnAttempt: { type: "boolean" },
-              isInsufficientDataOrUnderInvestigation: { type: "boolean" },
-              occurredAt: { type: "string", format: "date" },
-              momentOfDay: { $ref: "#/components/schemas/CaseMomentOfDay" },
-              province: { $ref: "#/components/schemas/Province" },
-              location: { type: "string"},
-              geographicLocation: { $ref: "#/components/schemas/CaseGeographicLocation" },
-              place: { $ref: "#/components/schemas/CasePlace" },
-              murderWeapon: { $ref: "#/components/schemas/CaseMurderWeapon" },
-              hadLegalComplaints: { type: "boolean" },
-              totalLegalComplaints: { type: "integer" },
-              wasJudicialized: { type: "boolean" }, //¿Había alguna medida judicial?
-              judicialMeasures: { type: "array", items: { $ref: "#/components/schemas/CaseJudicialMeasure" } },
-              victimBondAggressor: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
-              isRape: { type: "boolean" },
-              isRelatedToOrganizedCrime: { type: "boolean" },
-              organizedCrimeNotes: { type: "string" },
-              generalNotes: { type: "string" },
-              newsLinks: { type: "array", items: { type: "string" }, minItems: 1, "uniqueItems": true },
-
-
-
-              victim: {
-                type: "object",
-                properties: {
-                  fullName: { type: "string", minLength: 5 },
-                  age: { type: "integer" },
-                  gender: { $ref: "#/components/schemas/Gender" },
-                  nationality: { $ref: "#/components/schemas/Nationality" },
-                  isSexualWorker: { type: "boolean" },
-                  isMissingPerson: { type: "boolean" },
-                  isNativePeople: { type: "boolean" },
-                  isPregnant: { type: "boolean" },
-                  hasDisabillity: { type: "boolean" },
-                  occupation: { type: "string" },
-                  hasChildren: { type: "boolean" },
-                  numberOfChildren: { type: "integer" },
-                  ageOfChildren: { type: "array", items: { type: "number" }, minItems: 0, "uniqueItems": false },
-                },
-                additionalProperties: false,
-              },
-
-              aggressor: {
-                type: "object",
-                dependentRequired: {
-                  securityForce: ["belongsSecurityForce"],
-                },
-                properties: {
-                  fullName: { type: "string", minLength: 5 },
-                  age: { type: "integer" },
-                  gender: { $ref: "#/components/schemas/Gender" },
-                  hasLegalComplaintHistory: { type: "boolean" },
-                  hasPreviousCases: { type: "boolean" },
-                  wasInPrison: { type: "boolean" },
-                  behaviourPostCase: { $ref: "#/components/schemas/CaseAggressorBehaviorPostCase" },
-                  belongsSecurityForce: { type: "boolean" },
-                  securityForce: { $ref: "#/components/schemas/CaseAggressorSecurityForce" },
-                },
-                additionalProperties: false,
-              },
-            },
-            additionalProperties: false,
-          },
+          schema: { $ref: "#/components/schemas/Case" },
         },
       },
     },
@@ -110,85 +116,7 @@ router.operation({
   handlers: [
     async (ctx) => {
       const body = ctx.request.body;
-
-      // More complex validations
-      const errors = [];
-
-//Case validations
-      if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
-        errors.push({
-          "type": "body",
-          "path": "/isRelatedToOrganizedCrime",
-          "message": "Debe ser verdadero si hay notas de crimen organizado",
-        });
-      }
-
-      if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
-        errors.push({
-          "type": "body",
-          "path": "/organizedCrimeNotes",
-          "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
-        });
-      }
-
-      if (body.victim.ageOfChildren && (body.victim.numberOfChildren < body.victim.ageOfChildren.length)) {
-        errors.push({
-          "type": "body",
-          "path": "/victim.numberOfChildren",
-          "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
-        });
-      }
-
-      if (body.totalLegalComplaints && !body.hadLegalComplaints) {
-        errors.push({
-          "type": "body",
-          "path": "/hadLegalComplaints",
-          "message": "Debe ser verdadero is se completo la cantidad de denuncias",
-        });
-      }
-
-      if (body.wasJudicialized && !body.hadLegalComplaints) {
-        errors.push({
-          "type": "body",
-          "path": "/hadLegalComplaints",
-          "message": "Debe ser verdadero si tiene medidas judiciales",
-        });
-      }
-
-      if (body.judicialMeasures && !body.wasJudicialized) {
-        errors.push({
-          "type": "body",
-          "path": "/wasJudicialized",
-          "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
-        });
-      }
-
-//victim validations
-      if (body.victim.numberOfChildren && !body.victim.hasChildren) {
-        errors.push({
-          "type": "body",
-          "path": "/victim.hasChildren",
-          "message": "Debe ser verdadero si tiene al menos un hijx",
-        });
-      }
-
-      if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
-        errors.push({
-          "type": "body",
-          "path": "/victim.hasChildren",
-          "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
-        });
-      }
-
-//aggresor validations
-      if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
-        errors.push({
-          "type": "body",
-          "path": "/aggressor.belongsSecurityForce",
-          "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
-        });
-      }
-
+      const errors = caseValidations(body);
 
       if (errors.length > 0) {
         ctx.status = 422;
@@ -284,6 +212,94 @@ router.operation({
         );
 
       ctx.body = cases;
+    },
+  ],
+});
+
+router.operation({
+  method: "put",
+  relativePath: "/{case_id}",
+  spec: {
+    tags: ["cases"],
+    summary: "Update a case",
+    security: [securitySchemes.oauth],
+    parameters: [{
+      in: "path",
+      name: "case_id",
+      required: true,
+      description: "ID of the case",
+      schema: {
+        type: "integer",
+        minimum: 1
+      }
+    }],
+
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/Case" },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: "Case updated successfully",
+      },
+      422: { $ref: "#/components/responses/ValidationErrorResponse" },
+    },
+  },
+  handlers: [
+    async (ctx) => {
+      const body = ctx.request.body;
+      const errors = caseValidations(body);
+
+      if (errors.length > 0) {
+        ctx.status = 422;
+        ctx.body = errors;
+        return;
+      }
+
+      const ids = await knex('cases').where('id', ctx.params.case_id).select("victimId", "aggressorId");
+
+      await knex.transaction(async (trx) => {
+        await trx("victims")
+          .where('id', ids[0].victimId)
+          .update(body.victim);
+
+        await trx("aggressors")
+          .where('id', ids[0].aggressorId)
+          .update(body.aggressor);
+
+        await trx("cases")
+          .where('id', ctx.params.case_id)
+          .update({
+            ...pick(body, [
+              "caseCategory",
+              "wasItAnAttempt",
+              "isInsufficientDataOrUnderInvestigation",
+              "occurredAt",
+              "momentOfDay",
+              "province",
+              "location",
+              "geographicLocation",
+              "place",
+              "murderWeapon",
+              "wasJudicialized",
+              "judicialMeasures",
+              "hadLegalComplaints",
+              "totalLegalComplaints",
+              "isRape",
+              "isRelatedToOrganizedCrime",
+              "organizedCrimeNotes",
+              "generalNotes",
+              "newsLinks",
+              "victimBondAggressor",
+            ]),
+          });
+      });
+
+      ctx.status = 201;
     },
   ],
 });
