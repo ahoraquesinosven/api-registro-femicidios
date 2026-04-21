@@ -261,8 +261,6 @@ router.operation({
       }
 
       const ids = await knex('cases').where('id', ctx.params.case_id).select("victimId", "aggressorId");
-     //remover el console log
-      console.log(ids)
 
       await knex.transaction(async (trx) => {
         await trx("victims")
