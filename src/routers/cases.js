@@ -178,47 +178,47 @@ router.operation({
       {
         name: "fromDate",
         in: "query",
-        schema: {type: "string", format: "date"},
+        schema: { type: "string", format: "date" },
       },
       {
         name: "toDate",
         in: "query",
-        schema: {type: "string", format: "date"},
+        schema: { type: "string", format: "date" },
       },
       {
         name: "province",
         in: "query",
-        schema: {$ref: "#/components/schemas/Province"},
+        schema: { $ref: "#/components/schemas/Province" },
       },
       {
         name: "location",
         in: "query",
-        schema: {type: "string"},
+        schema: { type: "string" },
       },
       {
         name: "caseCategory",
         in: "query",
-        schema: {$ref: "#/components/schemas/CaseCategory"},
+        schema: { $ref: "#/components/schemas/CaseCategory" },
       },
       {
         name: "victimFullName",
         in: "query",
-        schema: {type: "string"},
+        schema: { type: "string" },
       },
       {
         name: "murderWeapon",
         in: "query",
-        schema: {$ref: "#/components/schemas/CaseMurderWeapon"},
+        schema: { $ref: "#/components/schemas/CaseMurderWeapon" },
       },
       {
         name: "aggressorFullName",
         in: "query",
-        schema: {type: "string"},
+        schema: { type: "string" },
       },
       {
         name: "victimBondAggressor",
         in: "query",
-        schema: {$ref: "#/components/schemas/CaseVictimBondAggressor"},
+        schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
       },
     ],
     responses: {
@@ -234,25 +234,25 @@ router.operation({
                   "id", "occurredAt", "province", "victim", "aggressor", "caseCategory",
                 ],
                 properties: {
-                  id: {type: "integer"},
-                  caseCategory: {$ref: "#/components/schemas/Case/properties/caseCategory"},
-                  occurredAt: {$ref: "#/components/schemas/Case/properties/occurredAt"},
-                  province: {$ref: "#/components/schemas/Case/properties/province"},
-                  location: {$ref: "#/components/schemas/Case/properties/location"},
-                  murderWeapon: {$ref: "#/components/schemas/Case/properties/location"},
-                  victimBondAggressor: {$ref: "#/components/schemas/CaseMurderWeapon"},
+                  id: { type: "integer" },
+                  caseCategory: { $ref: "#/components/schemas/Case/properties/caseCategory" },
+                  occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
+                  province: { $ref: "#/components/schemas/Case/properties/province" },
+                  location: { $ref: "#/components/schemas/Case/properties/location" },
+                  murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
+                  victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
                   victim: {
                     type: "object",
                     properties: {
-                      fullName: {$ref: "#/components/schemas/Case/properties/victim/properties/fullName"},
-                      age: {$ref: "#/components/schemas/Case/properties/victim/properties/age"},
+                      fullName: { $ref: "#/components/schemas/Case/properties/victim/properties/fullName" },
+                      age: { $ref: "#/components/schemas/Case/properties/victim/properties/age" },
                     },
                   },
                   aggressor: {
                     type: "object",
                     properties: {
-                      fullName: {$ref: "#/components/schemas/Case/properties/aggressor/properties/fullName"},
-                      age: {$ref: "#/components/schemas/Case/properties/aggressor/properties/age"},
+                      fullName: { $ref: "#/components/schemas/Case/properties/aggressor/properties/fullName" },
+                      age: { $ref: "#/components/schemas/Case/properties/aggressor/properties/age" },
                     },
                   },
                 },
@@ -423,4 +423,77 @@ router.operation({
   ],
 });
 
+router.operation({
+  method: "get",
+  relativePath: "/{case_id}",
+  spec: {
+    tags: ["cases"],
+    summary: "Get a case by id",
+    security: [securitySchemes.oauth],
+    parameters: [{
+      in: "path",
+      name: "case_id",
+      required: true,
+      description: "ID of the case",
+      schema: {
+        type: "integer",
+        minimum: 1
+      }
+    }],
+    responses: {
+      200: {
+        description: "Case, victim and agreesor retrieved successfully",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Case" },
+          },
+        },
+      },
+    },
+  },
+  handlers: [
+    async (ctx) => {
+      const cases = await knex("cases").join("victims", "cases.victimId", "victims.id")
+        .join("aggressors", "cases.aggressorId", "aggressors.id")
+        .where('cases.id', ctx.params.case_id)
+        .select("*");
+
+      // FALTA poner dentro del SELECT el objeto completo como en el LIST y LUEGO hay que convertir esa estructura plana en NESTED 
+      const errors = [];
+
+      if (!ids) {
+        errors.push({
+          "type": "param",
+          "path": "/{case_id}",
+          "message": "Case id no existe",
+        });
+      }
+
+      if (errors.length > 0) {
+        ctx.status = 422;
+        ctx.body = errors;
+        return;
+      }
+
+      // LUEGO hay que convertir esa estructura plana en NESTED 
+
+
+      // const my_case = await knex("cases")
+      //   .where('cases.id', ctx.params.case_id)
+      //   .select("*");
+
+      // const my_victim = await knex('victims')
+      //   .where('id', ids[0].victimId)
+      //   .select("*");
+
+      // const my_aggressor = await knex('aggressors')
+      //   .where('id', ids[0].aggressorId)
+      //   .select("*");
+
+;
+
+      ctx.body = cases[0];
+    },
+  ],
+});
 export default router.nativeRouter;
