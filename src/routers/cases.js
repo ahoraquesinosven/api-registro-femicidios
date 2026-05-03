@@ -456,12 +456,58 @@ router.operation({
       const cases = await knex("cases").join("victims", "cases.victimId", "victims.id")
         .join("aggressors", "cases.aggressorId", "aggressors.id")
         .where('cases.id', ctx.params.case_id)
-        .select("*");
+        .select({
+          id: "cases.id",
+          caseCategory: "cases.caseCategory",
+          wasItAnAttempt: "cases.wasItAnAttempt",
+          isInsufficientDataOrUnderInvestigation: "cases.isInsufficientDataOrUnderInvestigation",
+          occurredAt: "cases.occurredAt",
+          momentOfDay: "cases.momentOfDay",
+          province: "cases.province",
+          location: "cases.location",
+          geographicLocation: "cases.geographicLocation",
+          place: "cases.place",
+          murderWeapon: "cases.murderWeapon",
+          hadLegalComplaints: "cases.hadLegalComplaints",
+          totalLegalComplaints: "cases.totalLegalComplaints",
+          wasJudicialized: "cases.wasJudicialized",
+          judicialMeasures: "cases.judicialMeasures",
+          victimBondAggressor: "cases.victimBondAggressor",
+          isRape: "cases.isRape",
+          isRelatedToOrganizedCrime: "cases.isRelatedToOrganizedCrime",
+          organizedCrimeNotes: "cases.organizedCrimeNotes",
+          generalNotes: "cases.generalNotes",
+          newsLinks: "cases.newsLinks",
 
-      // FALTA poner dentro del SELECT el objeto completo como en el LIST y LUEGO hay que convertir esa estructura plana en NESTED 
+          //Victim
+          victimFullName: "victims.fullName",
+          victimAge: "victims.age",
+          victimGender: "victims.gender",
+          victimIsSexualWorker: "victims.isSexualWorker",
+          victimIsMissingPerson: "victims.isMissingPerson",
+          victimIsNativePeople: "victims.isNativePeople",
+          victimIsPregnant: "victims.isPregnant",
+          victimHasDisabillity: "victims.hasDisabillity",
+          victimOccupation: "victims.occupation",
+          victimHasChildren: "victims.hasChildren",
+          victimNumberOfChildren: "victims.numberOfChildren",
+          victimAgeOfChildren: "victims.ageOfChildren",
+
+          //Aggressor
+          aggressorFullName: "aggressors.fullName",
+          aggressorAge: "aggressors.age",
+          aggressorGender: "aggressors.gender",
+          aggressorHasLegalComplaintHistory: "aggressors.hasLegalComplaintHistory",
+          aggressorHasPreviousCases: "aggressors.hasPreviousCases",
+          aggressorWasInPrison: "aggressors.wasInPrison",
+          aggressorBehaviourPostCase: "aggressors.behaviourPostCase",
+          aggressorSecurityForce: "aggressors.securityForce",
+
+        });
+
       const errors = [];
 
-      if (!ids) {
+      if (cases.length === 0) {
         errors.push({
           "type": "param",
           "path": "/{case_id}",
@@ -475,24 +521,59 @@ router.operation({
         return;
       }
 
-      // LUEGO hay que convertir esa estructura plana en NESTED 
+      const first_case = cases[0];
 
+      const case_nested = {
+        id: first_case.id,
+        caseCategory: first_case.caseCategory,
+        wasItAnAttempt: first_case.wasItAnAttempt,
+        isInsufficientDataOrUnderInvestigation: first_case.isInsufficientDataOrUnderInvestigation,
+        occurredAt: first_case.occurredAt,
+        momentOfDay: first_case.momentOfDay,
+        province: first_case.province,
+        location: first_case.location,
+        geographicLocation: first_case.geographicLocation,
+        place: first_case.place,
+        murderWeapon: first_case.murderWeapon,
+        hadLegalComplaints: first_case.hadLegalComplaints,
+        totalLegalComplaints: first_case.totalLegalComplaints,
+        wasJudicialized: first_case.wasJudicialized,
+        judicialMeasures: first_case.judicialMeasures,
+        victimBondAggressor: first_case.victimBondAggressor,
+        isRape: first_case.isRape,
+        isRelatedToOrganizedCrime: first_case.isRelatedToOrganizedCrime,
+        organizedCrimeNotes: first_case.organizedCrimeNotes,
+        generalNotes: first_case.generalNotes,
+        newsLinks: first_case.newsLinks,
 
-      // const my_case = await knex("cases")
-      //   .where('cases.id', ctx.params.case_id)
-      //   .select("*");
+        victim: {
+          fullName: first_case.victimFullName,
+          age: first_case.victimAge,
+          gender: first_case.victimGender,
+          isSexualWorker: first_case.victimIsSexualWorker,
+          isMissingPerson: first_case.victimIsMissingPerson,
+          isNativePeople: first_case.victimIsNativePeople,
+          isPregnant: first_case.victimIsPregnant,
+          hasDisabillity: first_case.victimHasDisabillity,
+          occupation: first_case.victimOccupation,
+          hasChildren: first_case.victimHasChildren,
+          numberOfChildren: first_case.victimNumberOfChildren,
+          ageOfChildren: first_case.victimAgeOfChildren,
 
-      // const my_victim = await knex('victims')
-      //   .where('id', ids[0].victimId)
-      //   .select("*");
+        },
+        aggressor: {
+          fullName: first_case.aggressorFullName,
+          age: first_case.aggressorAge,
+          gender: first_case.aggressorGender,
+          hasLegalComplaintHistory: first_case.aggressorHasLegalComplaintHistory,
+          hasPreviousCases: first_case.aggressorHasPreviousCases,
+          wasInPrison: first_case.aggressorWasInPrison,
+          behaviourPostCase: first_case.aggressorBehaviourPostCase,
+          securityForce: first_case.aggressorSecurityForce,
+        },
+      };
 
-      // const my_aggressor = await knex('aggressors')
-      //   .where('id', ids[0].aggressorId)
-      //   .select("*");
-
-;
-
-      ctx.body = cases[0];
+      ctx.body = case_nested;
     },
   ],
 });
