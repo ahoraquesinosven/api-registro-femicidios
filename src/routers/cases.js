@@ -337,14 +337,14 @@ router.operation({
 
 router.operation({
   method: "put",
-  relativePath: "/{case_id}",
+  relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
     summary: "Update a case",
     security: [securitySchemes.oauth],
     parameters: [{
       in: "path",
-      name: "case_id",
+      name: "caseId",
       required: true,
       description: "ID of the case",
       schema: {
@@ -379,7 +379,7 @@ router.operation({
         return;
       }
 
-      const ids = await knex('cases').where('id', ctx.params.case_id).select("victimId", "aggressorId");
+      const ids = await knex('cases').where('id', ctx.params.caseId).select("victimId", "aggressorId");
 
       await knex.transaction(async (trx) => {
         await trx("victims")
@@ -391,7 +391,7 @@ router.operation({
           .update(body.aggressor);
 
         await trx("cases")
-          .where('id', ctx.params.case_id)
+          .where('id', ctx.params.caseId)
           .update({
             ...pick(body, [
               "caseCategory",
@@ -425,14 +425,14 @@ router.operation({
 
 router.operation({
   method: "get",
-  relativePath: "/{case_id}",
+  relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
     summary: "Get a case by id",
     security: [securitySchemes.oauth],
     parameters: [{
       in: "path",
-      name: "case_id",
+      name: "caseId",
       required: true,
       description: "ID of the case",
       schema: {
@@ -455,7 +455,7 @@ router.operation({
     async (ctx) => {
       const cases = await knex("cases").join("victims", "cases.victimId", "victims.id")
         .join("aggressors", "cases.aggressorId", "aggressors.id")
-        .where('cases.id', ctx.params.case_id)
+        .where('cases.id', ctx.params.caseId)
         .select({
           id: "cases.id",
           caseCategory: "cases.caseCategory",
@@ -510,7 +510,7 @@ router.operation({
       if (cases.length === 0) {
         errors.push({
           "type": "param",
-          "path": "/{case_id}",
+          "path": "/{caseId}",
           "message": "Case id no existe",
         });
       }
@@ -521,59 +521,59 @@ router.operation({
         return;
       }
 
-      const first_case = cases[0];
+      const firstCase = cases[0];
 
-      const case_nested = {
-        id: first_case.id,
-        caseCategory: first_case.caseCategory,
-        wasItAnAttempt: first_case.wasItAnAttempt,
-        isInsufficientDataOrUnderInvestigation: first_case.isInsufficientDataOrUnderInvestigation,
-        occurredAt: first_case.occurredAt,
-        momentOfDay: first_case.momentOfDay,
-        province: first_case.province,
-        location: first_case.location,
-        geographicLocation: first_case.geographicLocation,
-        place: first_case.place,
-        murderWeapon: first_case.murderWeapon,
-        hadLegalComplaints: first_case.hadLegalComplaints,
-        totalLegalComplaints: first_case.totalLegalComplaints,
-        wasJudicialized: first_case.wasJudicialized,
-        judicialMeasures: first_case.judicialMeasures,
-        victimBondAggressor: first_case.victimBondAggressor,
-        isRape: first_case.isRape,
-        isRelatedToOrganizedCrime: first_case.isRelatedToOrganizedCrime,
-        organizedCrimeNotes: first_case.organizedCrimeNotes,
-        generalNotes: first_case.generalNotes,
-        newsLinks: first_case.newsLinks,
+      const caseNested = {
+        id: firstCase.id,
+        caseCategory: firstCase.caseCategory,
+        wasItAnAttempt: firstCase.wasItAnAttempt,
+        isInsufficientDataOrUnderInvestigation: firstCase.isInsufficientDataOrUnderInvestigation,
+        occurredAt: firstCase.occurredAt,
+        momentOfDay: firstCase.momentOfDay,
+        province: firstCase.province,
+        location: firstCase.location,
+        geographicLocation: firstCase.geographicLocation,
+        place: firstCase.place,
+        murderWeapon: firstCase.murderWeapon,
+        hadLegalComplaints: firstCase.hadLegalComplaints,
+        totalLegalComplaints: firstCase.totalLegalComplaints,
+        wasJudicialized: firstCase.wasJudicialized,
+        judicialMeasures: firstCase.judicialMeasures,
+        victimBondAggressor: firstCase.victimBondAggressor,
+        isRape: firstCase.isRape,
+        isRelatedToOrganizedCrime: firstCase.isRelatedToOrganizedCrime,
+        organizedCrimeNotes: firstCase.organizedCrimeNotes,
+        generalNotes: firstCase.generalNotes,
+        newsLinks: firstCase.newsLinks,
 
         victim: {
-          fullName: first_case.victimFullName,
-          age: first_case.victimAge,
-          gender: first_case.victimGender,
-          isSexualWorker: first_case.victimIsSexualWorker,
-          isMissingPerson: first_case.victimIsMissingPerson,
-          isNativePeople: first_case.victimIsNativePeople,
-          isPregnant: first_case.victimIsPregnant,
-          hasDisabillity: first_case.victimHasDisabillity,
-          occupation: first_case.victimOccupation,
-          hasChildren: first_case.victimHasChildren,
-          numberOfChildren: first_case.victimNumberOfChildren,
-          ageOfChildren: first_case.victimAgeOfChildren,
+          fullName: firstCase.victimFullName,
+          age: firstCase.victimAge,
+          gender: firstCase.victimGender,
+          isSexualWorker: firstCase.victimIsSexualWorker,
+          isMissingPerson: firstCase.victimIsMissingPerson,
+          isNativePeople: firstCase.victimIsNativePeople,
+          isPregnant: firstCase.victimIsPregnant,
+          hasDisabillity: firstCase.victimHasDisabillity,
+          occupation: firstCase.victimOccupation,
+          hasChildren: firstCase.victimHasChildren,
+          numberOfChildren: firstCase.victimNumberOfChildren,
+          ageOfChildren: firstCase.victimAgeOfChildren,
 
         },
         aggressor: {
-          fullName: first_case.aggressorFullName,
-          age: first_case.aggressorAge,
-          gender: first_case.aggressorGender,
-          hasLegalComplaintHistory: first_case.aggressorHasLegalComplaintHistory,
-          hasPreviousCases: first_case.aggressorHasPreviousCases,
-          wasInPrison: first_case.aggressorWasInPrison,
-          behaviourPostCase: first_case.aggressorBehaviourPostCase,
-          securityForce: first_case.aggressorSecurityForce,
+          fullName: firstCase.aggressorFullName,
+          age: firstCase.aggressorAge,
+          gender: firstCase.aggressorGender,
+          hasLegalComplaintHistory: firstCase.aggressorHasLegalComplaintHistory,
+          hasPreviousCases: firstCase.aggressorHasPreviousCases,
+          wasInPrison: firstCase.aggressorWasInPrison,
+          behaviourPostCase: firstCase.aggressorBehaviourPostCase,
+          securityForce: firstCase.aggressorSecurityForce,
         },
       };
 
-      ctx.body = case_nested;
+      ctx.body = caseNested;
     },
   ],
 });
