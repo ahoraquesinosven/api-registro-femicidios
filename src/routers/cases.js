@@ -1,15 +1,11 @@
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
-import knex from "../services/knex.js";
+import knex, { NestedObjectsQuery } from "../services/knex.js";
+import { omit } from "../lib/fn.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
 });
-
-const pick = (obj, keys) =>
-  Object.fromEntries(
-    keys.filter((k) => k in (obj || {})).map((k) => [k, obj[k]]),
-  );
 
 const caseValidations = (body) => {
   const errors = [];
@@ -124,7 +120,6 @@ router.operation({
         return;
       }
 
-
       await knex.transaction(async (trx) => {
         const [{ id: victimId }] = await trx("victims")
           .insert(body.victim)
@@ -135,27 +130,9 @@ router.operation({
           .returning("id");
 
         await trx("cases").insert({
-          ...pick(body, [
-            "caseCategory",
-            "wasItAnAttempt",
-            "isInsufficientDataOrUnderInvestigation",
-            "occurredAt",
-            "momentOfDay",
-            "province",
-            "location",
-            "geographicLocation",
-            "place",
-            "murderWeapon",
-            "wasJudicialized",
-            "judicialMeasures",
-            "hadLegalComplaints",
-            "totalLegalComplaints",
-            "isRape",
-            "isRelatedToOrganizedCrime",
-            "organizedCrimeNotes",
-            "generalNotes",
-            "newsLinks",
-            "victimBondAggressor",
+          ...omit(body, [
+            "victim",
+            "aggressor",
           ]),
           aggressorId,
           victimId,
@@ -265,72 +242,59 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      const rows = await knex("cases")
-        .join("victims", "cases.victimId", "victims.id")
-        .join("aggressors", "cases.aggressorId", "aggressors.id")
+      const baseQuery = knex("cases as case")
+        .join("victims as victim", "case.victimId", "victim.id")
+        .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where((builder) => {
           if (ctx.query.fromDate) {
-            builder.where("cases.occurredAt", ">=", ctx.query.fromDate);
+            builder.where("case.occurredAt", ">=", ctx.query.fromDate);
           }
           if (ctx.query.toDate) {
-            builder.where("cases.occurredAt", "<", ctx.query.toDate);
+            builder.where("case.occurredAt", "<", ctx.query.toDate);
           }
           if (ctx.query.province) {
-            builder.where("cases.province", ctx.query.province);
+            builder.where("case.province", ctx.query.province);
           }
           if (ctx.query.location) {
-            builder.whereRaw('unaccent("cases"."location") ILIKE unaccent(?)', `%${ctx.query.location}%`)
+            builder.whereRaw('unaccent("case"."location") ILIKE unaccent(?)', `%${ctx.query.location}%`)
           }
           if (ctx.query.caseCategory) {
-            builder.where("cases.caseCategory", ctx.query.caseCategory);
+            builder.where("case.caseCategory", ctx.query.caseCategory);
           }
           if (ctx.query.victimFullName) {
-            builder.whereRaw('unaccent("victims"."fullName") ILIKE unaccent(?)', `%${ctx.query.victimFullName}%`)
+            builder.whereRaw('unaccent("victim"."fullName") ILIKE unaccent(?)', `%${ctx.query.victimFullName}%`)
           }
           if (ctx.query.murderWeapon) {
-            builder.where("cases.murderWeapon", ctx.query.murderWeapon);
+            builder.where("case.murderWeapon", ctx.query.murderWeapon);
           }
           if (ctx.query.aggressorFullName) {
-            builder.whereRaw('unaccent("aggressors"."fullName") ILIKE unaccent(?)', `%${ctx.query.aggressorFullName}%`)
+            builder.whereRaw('unaccent("aggressor"."fullName") ILIKE unaccent(?)', `%${ctx.query.aggressorFullName}%`)
           }
           if (ctx.query.victimBondAggressor) {
-            builder.where("cases.victimBondAggressor", ctx.query.victimBondAggressor);
+            builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
           }
         })
-        .orderBy("occurredAt", "asc")
-        .select({
-          id: "cases.id",
-          caseCategory: "cases.caseCategory",
-          occurredAt: "cases.occurredAt",
-          province: "cases.province",
-          location: "cases.location",
-          murderWeapon: "cases.murderWeapon",
-          victimBondAggressor: "cases.victimBondAggressor",
-          victimFullName: "victims.fullName",
-          victimAge: "victims.age",
-          aggressorFullName: "aggressors.fullName",
-          aggressorAge: "aggressors.age"
-        });
+        .orderBy("case.occurredAt", "asc");
 
-      const cases = rows.map((row) => ({
-        id: row.id,
-        caseCategory: row.caseCategory,
-        occurredAt: row.occurredAt,
-        province: row.province,
-        location: row.location,
-        murderWeapon: row.murderWeapon,
-        victimBondAggressor: row.victimBondAggressor,
-        victim: {
-          fullName: row.victimFullName,
-          age: row.victimAge,
-        },
-        aggressor: {
-          fullName: row.aggressorFullName,
-          age: row.aggressorAge,
-        },
-      }));
+      const objectsQuery = new NestedObjectsQuery({
+        baseQuery: baseQuery,
+        rootQualifier: "case",
+        fields: [
+          "case.id",
+          "case.caseCategory",
+          "case.occurredAt",
+          "case.province",
+          "case.location",
+          "case.murderWeapon",
+          "case.victimBondAggressor",
+          "victim.fullName",
+          "victim.age",
+          "aggressor.fullName",
+          "aggressor.age"
+        ],
+      });
 
-      ctx.body = cases;
+      ctx.body = await objectsQuery.select();
     },
   ],
 });
@@ -362,10 +326,11 @@ router.operation({
       },
     },
     responses: {
-      201: {
+      204: {
         description: "Case updated successfully",
       },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
+      404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
   },
   handlers: [
@@ -381,6 +346,16 @@ router.operation({
 
       const ids = await knex('cases').where('id', ctx.params.caseId).select("victimId", "aggressorId");
 
+      if (ids.length !== 1) {
+        ctx.status = 404;
+        ctx.body = [{
+          "type": "path",
+          "path": "/caseId",
+          "message": `El caso ${ctx.params.caseId} no existe`,
+        }];
+        return;
+      }
+
       await knex.transaction(async (trx) => {
         await trx("victims")
           .where('id', ids[0].victimId)
@@ -393,32 +368,14 @@ router.operation({
         await trx("cases")
           .where('id', ctx.params.caseId)
           .update({
-            ...pick(body, [
-              "caseCategory",
-              "wasItAnAttempt",
-              "isInsufficientDataOrUnderInvestigation",
-              "occurredAt",
-              "momentOfDay",
-              "province",
-              "location",
-              "geographicLocation",
-              "place",
-              "murderWeapon",
-              "wasJudicialized",
-              "judicialMeasures",
-              "hadLegalComplaints",
-              "totalLegalComplaints",
-              "isRape",
-              "isRelatedToOrganizedCrime",
-              "organizedCrimeNotes",
-              "generalNotes",
-              "newsLinks",
-              "victimBondAggressor",
+            ...omit(body, [
+              "victim",
+              "aggressor",
             ]),
           });
       });
 
-      ctx.status = 201;
+      ctx.status = 204;
     },
   ],
 });
@@ -449,131 +406,80 @@ router.operation({
           },
         },
       },
+      404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
   },
   handlers: [
     async (ctx) => {
-      const cases = await knex("cases").join("victims", "cases.victimId", "victims.id")
-        .join("aggressors", "cases.aggressorId", "aggressors.id")
-        .where('cases.id', ctx.params.caseId)
-        .select({
-          id: "cases.id",
-          caseCategory: "cases.caseCategory",
-          wasItAnAttempt: "cases.wasItAnAttempt",
-          isInsufficientDataOrUnderInvestigation: "cases.isInsufficientDataOrUnderInvestigation",
-          occurredAt: "cases.occurredAt",
-          momentOfDay: "cases.momentOfDay",
-          province: "cases.province",
-          location: "cases.location",
-          geographicLocation: "cases.geographicLocation",
-          place: "cases.place",
-          murderWeapon: "cases.murderWeapon",
-          hadLegalComplaints: "cases.hadLegalComplaints",
-          totalLegalComplaints: "cases.totalLegalComplaints",
-          wasJudicialized: "cases.wasJudicialized",
-          judicialMeasures: "cases.judicialMeasures",
-          victimBondAggressor: "cases.victimBondAggressor",
-          isRape: "cases.isRape",
-          isRelatedToOrganizedCrime: "cases.isRelatedToOrganizedCrime",
-          organizedCrimeNotes: "cases.organizedCrimeNotes",
-          generalNotes: "cases.generalNotes",
-          newsLinks: "cases.newsLinks",
+      const baseQuery = knex("cases as case")
+        .join("victims as victim", "case.victimId", "victim.id")
+        .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
+        .where('case.id', ctx.params.caseId);
 
-          //Victim
-          victimFullName: "victims.fullName",
-          victimAge: "victims.age",
-          victimGender: "victims.gender",
-          victimIsSexualWorker: "victims.isSexualWorker",
-          victimIsMissingPerson: "victims.isMissingPerson",
-          victimIsNativePeople: "victims.isNativePeople",
-          victimIsPregnant: "victims.isPregnant",
-          victimHasDisabillity: "victims.hasDisabillity",
-          victimOccupation: "victims.occupation",
-          victimHasChildren: "victims.hasChildren",
-          victimNumberOfChildren: "victims.numberOfChildren",
-          victimAgeOfChildren: "victims.ageOfChildren",
+      const objectsQuery = new NestedObjectsQuery({
+        baseQuery: baseQuery,
+        rootQualifier: "case",
+        fields: [
+          // Base case fields
+          "case.id",
+          "case.caseCategory",
+          "case.wasItAnAttempt",
+          "case.isInsufficientDataOrUnderInvestigation",
+          "case.occurredAt",
+          "case.momentOfDay",
+          "case.province",
+          "case.location",
+          "case.geographicLocation",
+          "case.place",
+          "case.murderWeapon",
+          "case.hadLegalComplaints",
+          "case.totalLegalComplaints",
+          "case.wasJudicialized",
+          "case.judicialMeasures",
+          "case.victimBondAggressor",
+          "case.isRape",
+          "case.isRelatedToOrganizedCrime",
+          "case.organizedCrimeNotes",
+          "case.generalNotes",
+          "case.newsLinks",
+          // Victim
+          "victim.fullName",
+          "victim.age",
+          "victim.gender",
+          "victim.isSexualWorker",
+          "victim.isMissingPerson",
+          "victim.isNativePeople",
+          "victim.isPregnant",
+          "victim.hasDisabillity",
+          "victim.occupation",
+          "victim.hasChildren",
+          "victim.numberOfChildren",
+          "victim.ageOfChildren",
+          // Aggressor
+          "aggressor.fullName",
+          "aggressor.age",
+          "aggressor.gender",
+          "aggressor.hasLegalComplaintHistory",
+          "aggressor.hasPreviousCases",
+          "aggressor.wasInPrison",
+          "aggressor.behaviourPostCase",
+          "aggressor.securityForce",
+        ],
+      });
 
-          //Aggressor
-          aggressorFullName: "aggressors.fullName",
-          aggressorAge: "aggressors.age",
-          aggressorGender: "aggressors.gender",
-          aggressorHasLegalComplaintHistory: "aggressors.hasLegalComplaintHistory",
-          aggressorHasPreviousCases: "aggressors.hasPreviousCases",
-          aggressorWasInPrison: "aggressors.wasInPrison",
-          aggressorBehaviourPostCase: "aggressors.behaviourPostCase",
-          aggressorSecurityForce: "aggressors.securityForce",
-
-        });
-
-      const errors = [];
+      const cases = await objectsQuery.select();
 
       if (cases.length === 0) {
-        errors.push({
-          "type": "param",
-          "path": "/{caseId}",
-          "message": "Case id no existe",
-        });
-      }
-
-      if (errors.length > 0) {
-        ctx.status = 422;
-        ctx.body = errors;
+        ctx.status = 404;
+        ctx.body = [{
+          "type": "path",
+          "path": "/caseId",
+          "message": `El caso ${ctx.params.caseId} no existe`,
+        }];
         return;
       }
 
-      const firstCase = cases[0];
-
-      const caseNested = {
-        id: firstCase.id,
-        caseCategory: firstCase.caseCategory,
-        wasItAnAttempt: firstCase.wasItAnAttempt,
-        isInsufficientDataOrUnderInvestigation: firstCase.isInsufficientDataOrUnderInvestigation,
-        occurredAt: firstCase.occurredAt,
-        momentOfDay: firstCase.momentOfDay,
-        province: firstCase.province,
-        location: firstCase.location,
-        geographicLocation: firstCase.geographicLocation,
-        place: firstCase.place,
-        murderWeapon: firstCase.murderWeapon,
-        hadLegalComplaints: firstCase.hadLegalComplaints,
-        totalLegalComplaints: firstCase.totalLegalComplaints,
-        wasJudicialized: firstCase.wasJudicialized,
-        judicialMeasures: firstCase.judicialMeasures,
-        victimBondAggressor: firstCase.victimBondAggressor,
-        isRape: firstCase.isRape,
-        isRelatedToOrganizedCrime: firstCase.isRelatedToOrganizedCrime,
-        organizedCrimeNotes: firstCase.organizedCrimeNotes,
-        generalNotes: firstCase.generalNotes,
-        newsLinks: firstCase.newsLinks,
-
-        victim: {
-          fullName: firstCase.victimFullName,
-          age: firstCase.victimAge,
-          gender: firstCase.victimGender,
-          isSexualWorker: firstCase.victimIsSexualWorker,
-          isMissingPerson: firstCase.victimIsMissingPerson,
-          isNativePeople: firstCase.victimIsNativePeople,
-          isPregnant: firstCase.victimIsPregnant,
-          hasDisabillity: firstCase.victimHasDisabillity,
-          occupation: firstCase.victimOccupation,
-          hasChildren: firstCase.victimHasChildren,
-          numberOfChildren: firstCase.victimNumberOfChildren,
-          ageOfChildren: firstCase.victimAgeOfChildren,
-
-        },
-        aggressor: {
-          fullName: firstCase.aggressorFullName,
-          age: firstCase.aggressorAge,
-          gender: firstCase.aggressorGender,
-          hasLegalComplaintHistory: firstCase.aggressorHasLegalComplaintHistory,
-          hasPreviousCases: firstCase.aggressorHasPreviousCases,
-          wasInPrison: firstCase.aggressorWasInPrison,
-          behaviourPostCase: firstCase.aggressorBehaviourPostCase,
-          securityForce: firstCase.aggressorSecurityForce,
-        },
-      };
-
-      ctx.body = caseNested;
+      ctx.body = cases[0];
     },
   ],
 });
