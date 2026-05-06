@@ -22,6 +22,11 @@ Once your image is running, run migrations via `docker compose run api node_modu
 
 To check the API open swagger in http://localhost:8081/ 
 
+## Feed Items
+- Alerts are configured in google alerts using email `alertafemicidios@ahoraquesinosven.org.ar`
+- For example, we configured: adulta mayor asesinada,  anciana asesinada, crimen de odio, crimen pasional,  femicidio, femicidio vinculado, joven asesinada, jubilada asesinada, lesboodio, violencia de genero, violencia machista, etc. 
+- Then for each rss feed, we configure it in `src/services/google/alerts.js`
+
 ## License
 
 See the [LICENSE](./LICENSE) file for license rights and limitations (MIT).
