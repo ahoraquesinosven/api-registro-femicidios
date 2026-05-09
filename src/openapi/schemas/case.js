@@ -31,6 +31,9 @@ export default {
         organizedCrimeNotes: { type: "string" },
         generalNotes: { type: "string" },
         newsLinks: { type: "array", items: { type: "string" }, minItems: 1, "uniqueItems": true },
+        hasMediaGenderPerspective: { type: "boolean" },
+        coverageMediaPerspectiveNotes: { type: "string" },
+
 
 
 
@@ -66,7 +69,7 @@ export default {
                 hasLegalComplaintHistory: { type: "boolean" },
                 hasPreviousCases: { type: "boolean" },
                 wasInPrison: { type: "boolean" },
-                behaviourPostCase: { $ref: "#/components/schemas/CaseAggressorBehaviorPostCase" },
+                behaviourPostCase: { type: "array", items: { $ref: "#/components/schemas/CaseAggressorBehaviorPostCase" }},
                 belongsSecurityForce: { type: "boolean" },
                 securityForce: { $ref: "#/components/schemas/CaseAggressorSecurityForce" },
             },

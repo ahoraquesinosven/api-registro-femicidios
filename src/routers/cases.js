@@ -58,6 +58,22 @@ const caseValidations = (body) => {
     });
   }
 
+  if ((body.hasMediaGenderPerspective === true | body.hasMediaGenderPerspective === false) && !body.coverageMediaPerspectiveNotes) {
+    errors.push({
+      "type": "body",
+      "path": "/coverageMediaPerspectiveNotes",
+      "message": "Debe completarse las notas de cobertura mediática si se indicó si el caso tuvo o no tuvo perspectiva de género en los medios",
+    });
+  }
+
+  if (body.coverageMediaPerspectiveNotes && (body.hasMediaGenderPerspective === null || body.hasMediaGenderPerspective === undefined)) {
+    errors.push({
+      "type": "body",
+      "path": "/hasMediaGenderPerspective",
+      "message": "Debe indicarse si el caso tuvo o no perspectiva de género en los medios si se completaron las notas de cobertura mediática",
+    });
+  }
+
   //victim validations
   if (body.victim.numberOfChildren && !body.victim.hasChildren) {
     errors.push({
@@ -442,6 +458,8 @@ router.operation({
           "case.organizedCrimeNotes",
           "case.generalNotes",
           "case.newsLinks",
+          "case.hasMediaGenderPerspective",
+          "case.coverageMediaPerspectiveNotes",
           // Victim
           "victim.fullName",
           "victim.age",
