@@ -31,6 +31,9 @@ export default {
         organizedCrimeNotes: { type: "string" },
         generalNotes: { type: "string" },
         newsLinks: { type: "array", items: { type: "string" }, minItems: 1, "uniqueItems": true },
+        hasMediaGenderPerspective: { type: "boolean" },
+        coverageMediaPerspectiveNotes: { type: "string" },
+
 
 
 
