@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 3 ]]; then
+  echo "Usage: $0 <input-file> <api-key> <url>" >&2
+  exit 1
+fi
+
+INPUT_FILE="$1"
+API_KEY="$2"
+API_URL="$3"
+ERRORS_FILE="deadletter.json"
+LINE_NUM=0
+ERROR_COUNT=0
+
+> "$ERRORS_FILE"
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+  LINE_NUM=$((LINE_NUM + 1))
+  [[ -z "$line" ]] && continue
+
+  RESPONSE_BODY=$(curl -s -w "\n%{http_code}" \
+    -X POST "$API_URL" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $API_KEY" \
+    -d "$line")
+
+  CURL_EXIT=$?
+  HTTP_STATUS="${RESPONSE_BODY##*$'\n'}"
+  RESPONSE_BODY="${RESPONSE_BODY%$'\n'*}"
+
+  if [[ $CURL_EXIT -ne 0 || $HTTP_STATUS -ge 400 ]]; then
+    echo "[ERROR] Line $LINE_NUM: curl exit=$CURL_EXIT http_status=$HTTP_STATUS" >&2
+    echo "[ERROR] Response: $RESPONSE_BODY" >&2
+    echo "$line" >> "$ERRORS_FILE"
+    ERROR_COUNT=$((ERROR_COUNT + 1))
+  else
+    echo "[OK] Line $LINE_NUM: curl exit=$CURL_EXIT http_status=$HTTP_STATUS" >&2
+  fi
+done < "$INPUT_FILE"
+
+echo ""
+echo "Done. $LINE_NUM lines processed, $ERROR_COUNT errors."
+if [[ $ERROR_COUNT -gt 0 ]]; then
+  echo "Failed lines written to $ERRORS_FILE"
+fi

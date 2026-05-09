@@ -109,7 +109,7 @@ router.operation({
   spec: {
     tags: ["cases"],
     summary: "Create a new case",
-    security: [securitySchemes.oauth],
+    security: [securitySchemes.oauth, securitySchemes.internal],
     requestBody: {
       required: true,
       content: {
