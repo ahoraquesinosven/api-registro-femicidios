@@ -1,4 +1,6 @@
-import {OpenApiRouter, securitySchemes} from "../openapi.js";
+import {OpenApiRouter} from "../openapi/index.js";
+import {securitySchemes} from "../openapi/securitySchemes.js";
+
 
 const router = new OpenApiRouter({
   prefix: "/v1/profiles",

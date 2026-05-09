@@ -22,6 +22,15 @@ Once your image is running, run migrations via `docker compose run api node_modu
 
 To check the API open swagger in http://localhost:8081/ 
 
+## Running only API or with Frontend
+- To run just the API, remember to go to `.env` file and comment the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb`
+- To run the API and the Frontend together, go to `.env` file and review the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb` is NOT commented.
+
+
+## Ref links
+- To add validations: https://json-schema.org/understanding-json-schema/reference/conditionals 
+- OpenAPI especification: https://swagger.io/specification/ 
+
 ## Feed Items
 - Alerts are configured in google alerts using email `alertafemicidios@ahoraquesinosven.org.ar`
 - For example, we configured: adulta mayor asesinada,  anciana asesinada, crimen de odio, crimen pasional,  femicidio, femicidio vinculado, joven asesinada, jubilada asesinada, lesboodio, violencia de genero, violencia machista, etc. 

@@ -108,3 +108,10 @@ coverage
 
 .env
 .db
+
+############################
+# Others
+############################
+.vscode
+historic-data/*.tsv
+historic-data/*.json
