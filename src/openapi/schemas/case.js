@@ -37,7 +37,7 @@ export default {
         victim: {
             type: "object",
             properties: {
-                fullName: { type: "string", minLength: 5 },
+                fullName: { type: "string"},
                 age: { type: "integer" },
                 gender: { $ref: "#/components/schemas/Gender" },
                 nationality: { $ref: "#/components/schemas/Nationality" },
@@ -60,7 +60,7 @@ export default {
                 securityForce: ["belongsSecurityForce"],
             },
             properties: {
-                fullName: { type: "string", minLength: 5 },
+                fullName: { type: "string"},
                 age: { type: "integer" },
                 gender: { $ref: "#/components/schemas/Gender" },
                 hasLegalComplaintHistory: { type: "boolean" },
