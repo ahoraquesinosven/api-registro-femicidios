@@ -1,0 +1,280 @@
+import fs from "fs";
+import * as p from "./parse.js";
+
+const IGNORE_TOKEN = "IGNORE";
+
+const headers = [
+    "createdAt",
+    IGNORE_TOKEN,
+    "occurredAt",
+    "momentOfDay",
+    "victimFullName",
+    IGNORE_TOKEN,
+    "victimAge",
+    "victimGender",
+    "victimNationality",
+    "province",
+    "location",
+    "geographicLocation",
+    "place",
+    "murderWeapon",
+    "caseCategory",
+    "victimIsSexualWorker",
+    "victimIsMissingPerson",
+    "victimIsNativePeople",
+    "victimIsPregnant",
+    "victimHasDisability",
+    "victimOccupation",
+    "hadLegalComplaints",
+    "totalLegalComplaints",
+    "wasJudicialized",
+    "isRape",
+    "isRelatedToOrganizedCrime",
+    "organizedCrimeNotes",
+    "hasChildren",
+    "numberOfChildren",
+    "ageOfChildren_1_1",
+    "ageOfChildren_2_1",
+    "ageOfChildren_2_2",
+    "ageOfChildren_3_1",
+    "ageOfChildren_3_2",
+    "ageOfChildren_3_3",
+    "ageOfChildren_4_1",
+    "ageOfChildren_4_2",
+    "ageOfChildren_4_3",
+    "ageOfChildren_4_4",
+    "ageOfChildren_5_1",
+    "ageOfChildren_5_2",
+    "ageOfChildren_5_3",
+    "ageOfChildren_5_4",
+    "ageOfChildren_5_5",
+    "ageOfChildren_6_1",
+    "ageOfChildren_6_2",
+    "ageOfChildren_6_3",
+    "ageOfChildren_6_4",
+    "ageOfChildren_6_5",
+    "ageOfChildren_6_6",
+    "ageOfChildren_7_1",
+    "ageOfChildren_7_2",
+    "ageOfChildren_7_3",
+    "ageOfChildren_7_4",
+    "ageOfChildren_7_5",
+    "ageOfChildren_7_6",
+    "ageOfChildren_7_7",
+    "ageOfChildren_8_1",
+    "ageOfChildren_8_2",
+    "ageOfChildren_8_3",
+    "ageOfChildren_8_4",
+    "ageOfChildren_8_5",
+    "ageOfChildren_8_6",
+    "ageOfChildren_8_7",
+    "ageOfChildren_8_8",
+    "ageOfChildren_9_1",
+    "ageOfChildren_9_2",
+    "ageOfChildren_9_3",
+    "ageOfChildren_9_4",
+    "ageOfChildren_9_5",
+    "ageOfChildren_9_6",
+    "ageOfChildren_9_7",
+    "ageOfChildren_9_8",
+    "ageOfChildren_9_9",
+    "ageOfChildren_10_1",
+    "ageOfChildren_10_2",
+    "ageOfChildren_10_3",
+    "ageOfChildren_10_4",
+    "ageOfChildren_10_5",
+    "ageOfChildren_10_6",
+    "ageOfChildren_10_7",
+    "ageOfChildren_10_8",
+    "ageOfChildren_10_9",
+    "ageOfChildren_10_rest",
+    "aggressorFullName",
+    "aggressorHasAge",
+    "aggressorAge",
+    "victimBondAggressor",
+    "hasPreviousCases",
+    "wasInPrison",
+    "behaviourPostCase",
+    "belongsSecurityForce",
+    "securityForce",
+    "generalNotes",
+    "newsLink_1",
+    "newsLink_2",
+    "behaviourPostCase2",
+    IGNORE_TOKEN,
+    IGNORE_TOKEN,
+    "mediaGenderApproach",
+    IGNORE_TOKEN,
+    IGNORE_TOKEN,
+];
+
+function buildVictim(row) {
+    const ageOfChildren = Object.entries(row)
+        .filter(([key, val]) => key.startsWith("ageOfChildren_") && val && val.trim() !== "")
+        .flatMap(([, val]) => val.split("-"))
+        .map((val) => parseFloat(val.trim()))
+        .filter(n => !isNaN(n));
+
+    const victim = {};
+
+    const fullName = p.parseOptionalString(row.victimFullName);
+    if (fullName !== undefined) victim.fullName = fullName;
+
+    const age = p.parseInteger(row.victimAge);
+    if (age !== undefined) victim.age = age;
+
+    const gender = p.parseGender(row.victimGender);
+    if (gender !== undefined) victim.gender = gender;
+
+    const nationality = p.parseNationality(row.victimNationality);
+    if (nationality !== undefined) victim.nationality = nationality;
+
+    const isSexualWorker = p.parseBoolean(row.victimIsSexualWorker);
+    if (isSexualWorker !== undefined) victim.isSexualWorker = isSexualWorker;
+
+    const isMissingPerson = p.parseBoolean(row.victimIsMissingPerson);
+    if (isMissingPerson !== undefined) victim.isMissingPerson = isMissingPerson;
+
+    const isNativePeople = p.parseBoolean(row.victimIsNativePeople);
+    if (isNativePeople !== undefined) victim.isNativePeople = isNativePeople;
+
+    const isPregnant = p.parseBoolean(row.victimIsPregnant);
+    if (isPregnant !== undefined) victim.isPregnant = isPregnant;
+
+    const hasDisabillity = p.parseBoolean(row.victimHasDisability);
+    if (hasDisabillity !== undefined) victim.hasDisabillity = hasDisabillity;
+
+    const occupation = p.parseOptionalString(row.victimOccupation);
+    if (occupation !== undefined) victim.occupation = occupation;
+
+    if (ageOfChildren.length > 0) victim.ageOfChildren = ageOfChildren;
+
+    const numberOfChildren = Math.max(
+        p.parseInteger(row.numberOfChildren),
+        ageOfChildren.length
+    );
+    if (numberOfChildren !== undefined) victim.numberOfChildren = numberOfChildren;
+
+    const hasChildren = p.parseBoolean(row.hasChildren) || numberOfChildren > 0 || ageOfChildren.length > 0;
+    if (hasChildren !== undefined) victim.hasChildren = hasChildren;
+
+    return victim;
+}
+
+function buildAggressor(row) {
+    const aggressor = {};
+
+    const fullName = p.parseOptionalString(row.aggressorFullName);
+    if (fullName !== undefined) aggressor.fullName = fullName;
+
+    const age = p.parseInteger(row.aggressorAge);
+    if (age !== undefined) aggressor.age = age;
+
+    const hasPreviousCases = p.parseBoolean(row.hasPreviousCases);
+    if (hasPreviousCases !== undefined) aggressor.hasPreviousCases = hasPreviousCases;
+
+    const wasInPrison = p.parseBoolean(row.wasInPrison);
+    if (wasInPrison !== undefined) aggressor.wasInPrison = wasInPrison;
+
+    const behavioursPostCase = [
+        p.parseBehaviourPostCase(row.behaviourPostCase),
+        p.parseBehaviourPostCase(row.behaviourPostCase2)
+    ];
+    aggressor.behaviourPostCase = [...new Set(behavioursPostCase.filter(Boolean))];
+
+    const securityForce = p.parseSecurityForce(row.securityForce);
+    if (securityForce !== undefined) aggressor.securityForce = securityForce;
+
+    const belongsSecurityForce = p.parseBoolean(row.belongsSecurityForce) || securityForce !== undefined;
+    if (belongsSecurityForce !== undefined) aggressor.belongsSecurityForce = belongsSecurityForce;
+
+    return aggressor;
+}
+
+function buildCase(row) {
+    const caseObj = {};
+
+    const occurredAt = p.parseDate(row.occurredAt);
+    if (occurredAt !== undefined) caseObj.occurredAt = occurredAt;
+
+    const momentOfDay = p.parseMomentOfDay(row.momentOfDay);
+    if (momentOfDay !== undefined) caseObj.momentOfDay = momentOfDay;
+
+    const province = p.parseProvince(row.province);
+    if (province !== undefined) caseObj.province = province;
+
+    const location = p.parseOptionalString(row.location);
+    if (location !== undefined) caseObj.location = location;
+
+    const geographicLocation = p.parseGeographicLocation(row.geographicLocation);
+    if (geographicLocation !== undefined) caseObj.geographicLocation = geographicLocation;
+
+    const place = p.parsePlace(row.place);
+    if (place !== undefined) caseObj.place = place;
+
+    const murderWeapon = p.parseMurderWeapon(row.murderWeapon);
+    if (murderWeapon !== undefined) caseObj.murderWeapon = murderWeapon;
+
+    const caseCategory = p.parseCaseCategory(row.caseCategory);
+    if (caseCategory !== undefined) caseObj.caseCategory = caseCategory;
+
+    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("intento de")) caseObj.wasItAnAttempt = true;
+    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("se investiga")) caseObj.isInsufficientDataOrUnderInvestigation = true;
+
+    const wasJudicialized = p.parseBoolean(row.wasJudicialized);
+    if (wasJudicialized !== undefined) caseObj.wasJudicialized = wasJudicialized;
+
+    const totalLegalComplaints = p.parseInteger(row.totalLegalComplaints);
+    if (totalLegalComplaints !== undefined && totalLegalComplaints > 0) caseObj.totalLegalComplaints = totalLegalComplaints;
+
+    const hadLegalComplaints = p.parseBoolean(row.hadLegalComplaints) || totalLegalComplaints > 0 || wasJudicialized;
+    if (hadLegalComplaints !== undefined) caseObj.hadLegalComplaints = hadLegalComplaints;
+
+    const victimBondAggressor = p.parseVictimBondAggressor(row.victimBondAggressor);
+    if (victimBondAggressor !== undefined) caseObj.victimBondAggressor = victimBondAggressor;
+
+    const isRape = p.parseBoolean(row.isRape);
+    if (isRape !== undefined) caseObj.isRape = isRape;
+
+    const organizedCrimeNotes = p.parseOptionalString(row.organizedCrimeNotes);
+    if (organizedCrimeNotes !== undefined) caseObj.organizedCrimeNotes = organizedCrimeNotes;
+
+    const isRelatedToOrganizedCrime = p.parseBoolean(row.isRelatedToOrganizedCrime) || Boolean(organizedCrimeNotes);
+    if (isRelatedToOrganizedCrime !== undefined) caseObj.isRelatedToOrganizedCrime = isRelatedToOrganizedCrime;
+
+    const generalNotes = p.parseOptionalString(row.generalNotes);
+    if (generalNotes !== undefined) caseObj.generalNotes = generalNotes;
+
+    const newsLinks = [...new Set(p.parseNewsLinks(row))];
+    if (newsLinks.length > 0) caseObj.newsLinks = newsLinks;
+
+    const hasMediaGenderPerspective = p.parseBoolean(row.mediaGenderApproach);
+    if (hasMediaGenderPerspective !== undefined) caseObj.hasMediaGenderPerspective = hasMediaGenderPerspective;
+
+    if (hasMediaGenderPerspective === true || hasMediaGenderPerspective === false) caseObj.coverageMediaPerspectiveNotes = "Notas pendientes";
+
+    return caseObj;
+}
+
+const data = fs.readFileSync("./2026.tsv", "utf-8");
+
+const rows = data
+    .split("\n")
+    .map((row) => row.split("\t"))
+    .slice(1)
+    .map((row) => Object.fromEntries(headers
+        .map((header, index) => [header, row[index]])
+        .filter(([header]) => header !== IGNORE_TOKEN)))
+    .map((row) => {
+        const victim = buildVictim(row);
+        const aggressor = buildAggressor(row);
+        const baseCase = buildCase(row);
+
+        return {
+            ...baseCase,
+            victim,
+            aggressor,
+        };
+    });
+
+fs.writeFileSync("./2026.json", rows.map((row) => JSON.stringify(row)).join("\n"), { flag: "w" });
