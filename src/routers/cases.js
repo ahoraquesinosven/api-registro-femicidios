@@ -373,6 +373,7 @@ router.operation({
       }
 
       const defaultVictim = {
+        hasChildren: null,
         numberOfChildren: null,
         ageOfChildren: null
       }
@@ -385,6 +386,7 @@ router.operation({
         organizedCrimeNotes: null,
         totalLegalComplaints: null,
         judicialMeasures: null,
+        hasMediaGenderPerspective: null,
         coverageMediaPerspectiveNotes: null,
       }
 
