@@ -372,19 +372,53 @@ router.operation({
         return;
       }
 
+      const defaultVictim = {
+        hasChildren: null,
+        numberOfChildren: null,
+        ageOfChildren: null
+      }
+
+      const defaultAggressor = {
+        securityForce: null,
+      }
+
+      const defaultCase = {
+        organizedCrimeNotes: null,
+        totalLegalComplaints: null,
+        judicialMeasures: null,
+        hasMediaGenderPerspective: null,
+        coverageMediaPerspectiveNotes: null,
+      }
+
+
       await knex.transaction(async (trx) => {
         await trx("victims")
           .where('id', ids[0].victimId)
-          .update(body.victim);
+          .update(
+            {
+              ...defaultVictim,
+              ...body.victim
+            }
+          );
 
         await trx("aggressors")
           .where('id', ids[0].aggressorId)
-          .update(body.aggressor);
+          .update(
+            {
+              ...defaultAggressor,
+              ...body.aggressor
+            }
+          );
 
         await trx("cases")
           .where('id', ctx.params.caseId)
           .update({
-            ...omit(body, [
+            ...omit(
+              { 
+                ... defaultCase,
+                ... body
+
+              }, [
               "victim",
               "aggressor",
             ]),

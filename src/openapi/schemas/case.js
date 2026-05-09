@@ -34,9 +34,6 @@ export default {
         hasMediaGenderPerspective: { type: "boolean" },
         coverageMediaPerspectiveNotes: { type: "string" },
 
-
-
-
         victim: {
             type: "object",
             properties: {
