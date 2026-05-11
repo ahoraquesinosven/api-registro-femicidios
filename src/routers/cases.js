@@ -214,6 +214,13 @@ router.operation({
         in: "query",
         schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
       },
+      {
+        name: "wasItAnAttempt",
+        in: "query",
+        schema: { type: "boolean" },
+      },
+
+
     ],
     responses: {
       200: {
@@ -235,6 +242,7 @@ router.operation({
                   location: { $ref: "#/components/schemas/Case/properties/location" },
                   murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
                   victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
+                  wasItAnAttempt: { type: "boolean" },
                   victim: {
                     type: "object",
                     properties: {
@@ -290,6 +298,9 @@ router.operation({
           if (ctx.query.victimBondAggressor) {
             builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
           }
+          if (ctx.query.wasItAnAttempt) {
+            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
+          }
         })
         .orderBy("case.occurredAt", "asc");
 
@@ -304,6 +315,7 @@ router.operation({
           "case.location",
           "case.murderWeapon",
           "case.victimBondAggressor",
+          "case.wasItAnAttempt",
           "victim.fullName",
           "victim.age",
           "aggressor.fullName",
@@ -373,12 +385,12 @@ router.operation({
         return;
       }
 
-     //En el edit: se setea default todo en null, si el campo viene, lo sobrescribe.
-    // Pero si el campo no se edita y no tiene valor actual (porque desde la UI no se manda el campo), se deja en null para asegurar de tener la BD actualizada.
-           
-    const defaultVictim = {
+      //En el edit: se setea default todo en null, si el campo viene, lo sobrescribe.
+      // Pero si el campo no se edita y no tiene valor actual (porque desde la UI no se manda el campo), se deja en null para asegurar de tener la BD actualizada.
+
+      const defaultVictim = {
         fullName: null,
-        age: null, 
+        age: null,
         gender: null,
         nationality: null,
         isSexualWorker: null,
@@ -395,7 +407,7 @@ router.operation({
       const defaultAggressor = {
         fullName: null,
         age: null,
-        gender: null, 
+        gender: null,
         hasLegalComplaintHistory: null,
         hasPreviousCases: null,
         wasInPrison: null,
@@ -449,9 +461,9 @@ router.operation({
           .where('id', ctx.params.caseId)
           .update({
             ...omit(
-              { 
-                ... defaultCase,
-                ... body
+              {
+                ...defaultCase,
+                ...body
 
               }, [
               "victim",
