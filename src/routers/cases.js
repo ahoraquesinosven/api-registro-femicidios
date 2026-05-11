@@ -2,6 +2,7 @@ import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex, { NestedObjectsQuery } from "../services/knex.js";
 import { omit } from "../lib/fn.js"
+import victimBondAggressor from "../data/victimBondAggressor.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
@@ -372,20 +373,54 @@ router.operation({
         return;
       }
 
-      const defaultVictim = {
+     //En el edit: se setea default todo en null, si el campo viene, lo sobrescribe.
+    // Pero si el campo no se edita y no tiene valor actual (porque desde la UI no se manda el campo), se deja en null para asegurar de tener la BD actualizada.
+           
+    const defaultVictim = {
+        fullName: null,
+        age: null, 
+        gender: null,
+        nationality: null,
+        isSexualWorker: null,
+        isMissingPerson: null,
+        isNativePeople: null,
+        isPregnant: null,
+        hasDisabillity: null,
+        occupation: null,
         hasChildren: null,
         numberOfChildren: null,
         ageOfChildren: null
       }
 
       const defaultAggressor = {
+        fullName: null,
+        age: null,
+        gender: null, 
+        hasLegalComplaintHistory: null,
+        hasPreviousCases: null,
+        wasInPrison: null,
+        behaviourPostCase: null,
+        belongsSecurityForce: null,
         securityForce: null,
       }
 
       const defaultCase = {
         organizedCrimeNotes: null,
+        wasItAnAttempt: null,
+        isInsufficientDataOrUnderInvestigation: null,
+        momentOfDay: null,
+        location: null,
+        geographicLocation: null,
+        murderWeapon: null,
+        hadLegalComplaints: null,
         totalLegalComplaints: null,
+        wasJudicialized: null,
         judicialMeasures: null,
+        victimBondAggressor: null,
+        isRape: null,
+        isRelatedToOrganizedCrime: null,
+        organizedCrimeNotes: null,
+        generalNotes: null,
         hasMediaGenderPerspective: null,
         coverageMediaPerspectiveNotes: null,
       }
