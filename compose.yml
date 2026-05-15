@@ -1,6 +1,7 @@
 services:
-  api:
+  dev:
     image: observatorio/api-registro-femicidios
+    user: "${UID}:${GID}"
     build:
       context: .
       target: development
@@ -34,8 +35,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./.db:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=observatorio-femicidios
       - POSTGRES_USER=vivas
       - POSTGRES_PASSWORD=nosqueremos
+
+volumes:
+  pgdata:
