@@ -301,7 +301,7 @@ router.operation({
             builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
           }
         })
-        .orderBy("case.occurredAt", "asc");
+        .orderBy("case.occurredAt", "desc");
 
       const results = await baseQuery.toNestedObjects({
         rootQualifier: "case",
