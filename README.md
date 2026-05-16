@@ -18,7 +18,7 @@ properly set up.
 Once you've set up your local `.env` file, you can run `docker compose up` to
 start the application locally
 
-Once your image is running, run migrations via `docker compose run dev node_modules/.bin/knex migrate:latest`
+Once your image is running, run migrations via `docker compose run dev knex migrate:latest`
 
 To check the API open swagger in http://localhost:8081/ 
 
