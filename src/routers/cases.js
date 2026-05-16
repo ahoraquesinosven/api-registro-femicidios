@@ -1,8 +1,7 @@
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
-import knex, { NestedObjectsQuery } from "../services/knex.js";
+import knex from "../services/knex.js";
 import { omit } from "../lib/fn.js"
-import victimBondAggressor from "../data/victimBondAggressor.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
@@ -281,19 +280,19 @@ router.operation({
             builder.where("case.province", ctx.query.province);
           }
           if (ctx.query.location) {
-            builder.whereRaw('unaccent("case"."location") ILIKE unaccent(?)', `%${ctx.query.location}%`)
+            builder.whereUnaccentedMatch("case.location", ctx.query.location);
           }
           if (ctx.query.caseCategory) {
             builder.where("case.caseCategory", ctx.query.caseCategory);
           }
           if (ctx.query.victimFullName) {
-            builder.whereRaw('unaccent("victim"."fullName") ILIKE unaccent(?)', `%${ctx.query.victimFullName}%`)
+            builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
           }
           if (ctx.query.murderWeapon) {
             builder.where("case.murderWeapon", ctx.query.murderWeapon);
           }
           if (ctx.query.aggressorFullName) {
-            builder.whereRaw('unaccent("aggressor"."fullName") ILIKE unaccent(?)', `%${ctx.query.aggressorFullName}%`)
+            builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
           }
           if (ctx.query.victimBondAggressor) {
             builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
@@ -304,8 +303,7 @@ router.operation({
         })
         .orderBy("case.occurredAt", "asc");
 
-      const objectsQuery = new NestedObjectsQuery({
-        baseQuery: baseQuery,
+      const results = await baseQuery.toNestedObjects({
         rootQualifier: "case",
         fields: [
           "case.id",
@@ -319,11 +317,11 @@ router.operation({
           "victim.fullName",
           "victim.age",
           "aggressor.fullName",
-          "aggressor.age"
+          "aggressor.age",
         ],
       });
 
-      ctx.body = await objectsQuery.select();
+      ctx.body = results;
     },
   ],
 });
@@ -513,8 +511,7 @@ router.operation({
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where('case.id', ctx.params.caseId);
 
-      const objectsQuery = new NestedObjectsQuery({
-        baseQuery: baseQuery,
+      const cases = await baseQuery.toNestedObjects({
         rootQualifier: "case",
         fields: [
           // Base case fields
@@ -565,8 +562,6 @@ router.operation({
           "aggressor.securityForce",
         ],
       });
-
-      const cases = await objectsQuery.select();
 
       if (cases.length === 0) {
         ctx.status = 404;
