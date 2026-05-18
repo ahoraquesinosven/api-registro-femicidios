@@ -4,8 +4,7 @@ const caseCategories = [
 "TRAVESTICIDIO",
 "TRANSFEMICIDIO",
 "LESBICIDIO",
-"INSTIGACION_AL_SUICIDIO",
-"CRIMEN_DE_ODIO"
+"INSTIGACION_AL_SUICIDIO"
 ];
 
 export default caseCategories;

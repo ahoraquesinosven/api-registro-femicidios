@@ -38,7 +38,7 @@ export default {
             type: "object",
             properties: {
                 fullName: { type: "string"},
-                age: { type: "integer" },
+                age: { type: "number" },
                 gender: { $ref: "#/components/schemas/Gender" },
                 nationality: { $ref: "#/components/schemas/Nationality" },
                 isSexualWorker: { type: "boolean" },

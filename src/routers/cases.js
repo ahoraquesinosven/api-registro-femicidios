@@ -1,6 +1,6 @@
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
-import knex, { NestedObjectsQuery } from "../services/knex.js";
+import knex from "../services/knex.js";
 import { omit } from "../lib/fn.js"
 
 const router = new OpenApiRouter({
@@ -213,6 +213,13 @@ router.operation({
         in: "query",
         schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
       },
+      {
+        name: "wasItAnAttempt",
+        in: "query",
+        schema: { type: "boolean" },
+      },
+
+
     ],
     responses: {
       200: {
@@ -234,6 +241,7 @@ router.operation({
                   location: { $ref: "#/components/schemas/Case/properties/location" },
                   murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
                   victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
+                  wasItAnAttempt: { type: "boolean" },
                   victim: {
                     type: "object",
                     properties: {
@@ -272,28 +280,30 @@ router.operation({
             builder.where("case.province", ctx.query.province);
           }
           if (ctx.query.location) {
-            builder.whereRaw('unaccent("case"."location") ILIKE unaccent(?)', `%${ctx.query.location}%`)
+            builder.whereUnaccentedMatch("case.location", ctx.query.location);
           }
           if (ctx.query.caseCategory) {
             builder.where("case.caseCategory", ctx.query.caseCategory);
           }
           if (ctx.query.victimFullName) {
-            builder.whereRaw('unaccent("victim"."fullName") ILIKE unaccent(?)', `%${ctx.query.victimFullName}%`)
+            builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
           }
           if (ctx.query.murderWeapon) {
             builder.where("case.murderWeapon", ctx.query.murderWeapon);
           }
           if (ctx.query.aggressorFullName) {
-            builder.whereRaw('unaccent("aggressor"."fullName") ILIKE unaccent(?)', `%${ctx.query.aggressorFullName}%`)
+            builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
           }
           if (ctx.query.victimBondAggressor) {
             builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
           }
+          if (ctx.query.wasItAnAttempt) {
+            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
+          }
         })
-        .orderBy("case.occurredAt", "asc");
+        .orderBy("case.occurredAt", "desc");
 
-      const objectsQuery = new NestedObjectsQuery({
-        baseQuery: baseQuery,
+      const results = await baseQuery.toNestedObjects({
         rootQualifier: "case",
         fields: [
           "case.id",
@@ -303,14 +313,15 @@ router.operation({
           "case.location",
           "case.murderWeapon",
           "case.victimBondAggressor",
+          "case.wasItAnAttempt",
           "victim.fullName",
           "victim.age",
           "aggressor.fullName",
-          "aggressor.age"
+          "aggressor.age",
         ],
       });
 
-      ctx.body = await objectsQuery.select();
+      ctx.body = results;
     },
   ],
 });
@@ -372,20 +383,54 @@ router.operation({
         return;
       }
 
+      //En el edit: se setea default todo en null, si el campo viene, lo sobrescribe.
+      // Pero si el campo no se edita y no tiene valor actual (porque desde la UI no se manda el campo), se deja en null para asegurar de tener la BD actualizada.
+
       const defaultVictim = {
+        fullName: null,
+        age: null,
+        gender: null,
+        nationality: null,
+        isSexualWorker: null,
+        isMissingPerson: null,
+        isNativePeople: null,
+        isPregnant: null,
+        hasDisabillity: null,
+        occupation: null,
         hasChildren: null,
         numberOfChildren: null,
         ageOfChildren: null
       }
 
       const defaultAggressor = {
+        fullName: null,
+        age: null,
+        gender: null,
+        hasLegalComplaintHistory: null,
+        hasPreviousCases: null,
+        wasInPrison: null,
+        behaviourPostCase: null,
+        belongsSecurityForce: null,
         securityForce: null,
       }
 
       const defaultCase = {
         organizedCrimeNotes: null,
+        wasItAnAttempt: null,
+        isInsufficientDataOrUnderInvestigation: null,
+        momentOfDay: null,
+        location: null,
+        geographicLocation: null,
+        murderWeapon: null,
+        hadLegalComplaints: null,
         totalLegalComplaints: null,
+        wasJudicialized: null,
         judicialMeasures: null,
+        victimBondAggressor: null,
+        isRape: null,
+        isRelatedToOrganizedCrime: null,
+        organizedCrimeNotes: null,
+        generalNotes: null,
         hasMediaGenderPerspective: null,
         coverageMediaPerspectiveNotes: null,
       }
@@ -414,9 +459,9 @@ router.operation({
           .where('id', ctx.params.caseId)
           .update({
             ...omit(
-              { 
-                ... defaultCase,
-                ... body
+              {
+                ...defaultCase,
+                ...body
 
               }, [
               "victim",
@@ -466,8 +511,7 @@ router.operation({
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where('case.id', ctx.params.caseId);
 
-      const objectsQuery = new NestedObjectsQuery({
-        baseQuery: baseQuery,
+      const cases = await baseQuery.toNestedObjects({
         rootQualifier: "case",
         fields: [
           // Base case fields
@@ -518,8 +562,6 @@ router.operation({
           "aggressor.securityForce",
         ],
       });
-
-      const cases = await objectsQuery.select();
 
       if (cases.length === 0) {
         ctx.status = 404;
