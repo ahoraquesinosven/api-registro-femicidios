@@ -1,7 +1,7 @@
 services:
   dev:
     image: observatorio/api-registro-femicidios
-    user: "${UID}:${GID}"
+    user: "${HOST_UID}:${HOST_GID}"
     build:
       context: .
       target: development
@@ -12,7 +12,6 @@ services:
     volumes:
       - './knexfile.mjs:/opt/project/knexfile.mjs'
       - './src:/opt/project/src'
-      - './bin:/opt/project/bin'
       - './spec:/opt/project/spec'
       - './migrations:/opt/project/migrations'
     ports:

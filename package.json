@@ -5,7 +5,6 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "config:template": "./bin/config",
     "start:dev": "node --watch-path=./src src/index.js",
     "start:prod": "node src/index.js"
   },

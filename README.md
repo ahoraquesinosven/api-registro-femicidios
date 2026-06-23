@@ -11,14 +11,25 @@ We use a dockerized development environment, so you will need
 [docker](https://www.docker.com/) on your machine. No other dependencies are
 required in your machine.
 
-First, create `.env` file and then run `docker compose run --rm dev npm run config:template`. This process
-will guide you through setting up your local `.env` file with all settings
-properly set up.
+Run the setup script:
 
-Once you've set up your local `.env` file, you can run `docker compose up` to
-start the application locally
+```bash
+./bin/setup-local-env
+```
 
-Once your image is running, run migrations via `docker compose run dev knex migrate:latest`
+It is idempotent (safe to re-run) and will:
+
+- Create a local `.env` file if missing, pinning `HOST_UID`/`HOST_GID` so the
+  container writes files as your user.
+- Detect required settings that have no value and prompt you for each one
+  (showing what it needs), writing your answers to `.env`.
+- Initialize the database and run migrations.
+
+When it finishes, start the application locally:
+
+```bash
+docker compose up
+```
 
 To check the API open swagger in http://localhost:8081/ 
 
