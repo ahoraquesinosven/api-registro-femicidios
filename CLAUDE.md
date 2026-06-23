@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 All commands run inside Docker. No local Node/npm needed.
 
 ```bash
-# First-time setup: create .env from template
-docker compose run --rm dev npm run config:template
+# First-time setup: create/complete .env (prompts for missing config) and run migrations
+./bin/setup-local-env
 
 # Start dev server (hot-reloads src/ changes)
 docker compose up
