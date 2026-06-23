@@ -2,6 +2,7 @@ import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
 import { omit } from "../lib/fn.js"
+import { encodeCursor, decodeCursor, CursorError } from "../lib/cursor.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
@@ -160,6 +161,67 @@ router.operation({
   ],
 });
 
+const LIST_FIELDS = [
+  "case.id",
+  "case.caseCategory",
+  "case.occurredAt",
+  "case.province",
+  "case.location",
+  "case.murderWeapon",
+  "case.victimBondAggressor",
+  "case.wasItAnAttempt",
+  "victim.fullName",
+  "victim.age",
+  "aggressor.fullName",
+  "aggressor.age",
+];
+
+const buildBaseQuery = (query) =>
+  knex("cases as case")
+    .join("victims as victim", "case.victimId", "victim.id")
+    .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
+    .where((builder) => {
+      if (query.fromDate) builder.where("case.occurredAt", ">=", query.fromDate);
+      if (query.toDate) builder.where("case.occurredAt", "<", query.toDate);
+      if (query.province) builder.where("case.province", query.province);
+      if (query.location) builder.whereUnaccentedMatch("case.location", query.location);
+      if (query.caseCategory) builder.where("case.caseCategory", query.caseCategory);
+      if (query.victimFullName) builder.whereNameMatch("victim.fullName", query.victimFullName);
+      if (query.murderWeapon) builder.where("case.murderWeapon", query.murderWeapon);
+      if (query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", query.aggressorFullName);
+      if (query.victimBondAggressor) builder.where("case.victimBondAggressor", query.victimBondAggressor);
+      if (query.wasItAnAttempt) builder.where("case.wasItAnAttempt", query.wasItAnAttempt);
+    });
+
+const CASE_ITEM_SCHEMA = {
+  type: "object",
+  required: ["id", "occurredAt", "province", "victim", "aggressor", "caseCategory"],
+  properties: {
+    id: { type: "integer" },
+    caseCategory: { $ref: "#/components/schemas/Case/properties/caseCategory" },
+    occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
+    province: { $ref: "#/components/schemas/Case/properties/province" },
+    location: { $ref: "#/components/schemas/Case/properties/location" },
+    murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
+    victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
+    wasItAnAttempt: { type: "boolean" },
+    victim: {
+      type: "object",
+      properties: {
+        fullName: { $ref: "#/components/schemas/Case/properties/victim/properties/fullName" },
+        age: { $ref: "#/components/schemas/Case/properties/victim/properties/age" },
+      },
+    },
+    aggressor: {
+      type: "object",
+      properties: {
+        fullName: { $ref: "#/components/schemas/Case/properties/aggressor/properties/fullName" },
+        age: { $ref: "#/components/schemas/Case/properties/aggressor/properties/age" },
+      },
+    },
+  },
+};
+
 router.operation({
   method: "get",
   relativePath: "/",
@@ -218,46 +280,43 @@ router.operation({
         in: "query",
         schema: { type: "boolean" },
       },
-
-
+      {
+        name: "limit",
+        in: "query",
+        schema: { type: "integer", minimum: 0, maximum: 200, default: 50 },
+      },
+      {
+        name: "start",
+        in: "query",
+        schema: { type: "string" },
+      },
     ],
     responses: {
       200: {
-        description: "List of cases",
+        description: "Paginated list of cases",
         content: {
           "application/json": {
             schema: {
-              type: "array",
-              items: {
-                type: "object",
-                required: [
-                  "id", "occurredAt", "province", "victim", "aggressor", "caseCategory",
-                ],
-                properties: {
-                  id: { type: "integer" },
-                  caseCategory: { $ref: "#/components/schemas/Case/properties/caseCategory" },
-                  occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
-                  province: { $ref: "#/components/schemas/Case/properties/province" },
-                  location: { $ref: "#/components/schemas/Case/properties/location" },
-                  murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
-                  victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
-                  wasItAnAttempt: { type: "boolean" },
-                  victim: {
-                    type: "object",
-                    properties: {
-                      fullName: { $ref: "#/components/schemas/Case/properties/victim/properties/fullName" },
-                      age: { $ref: "#/components/schemas/Case/properties/victim/properties/age" },
-                    },
-                  },
-                  aggressor: {
-                    type: "object",
-                    properties: {
-                      fullName: { $ref: "#/components/schemas/Case/properties/aggressor/properties/fullName" },
-                      age: { $ref: "#/components/schemas/Case/properties/aggressor/properties/age" },
-                    },
-                  },
-                },
+              type: "object",
+              required: ["limit", "total", "start", "next", "page"],
+              properties: {
+                limit: { type: "integer" },
+                total: { type: "integer" },
+                start: { type: ["string", "null"] },
+                next: { type: ["string", "null"] },
+                page: { type: "array", items: CASE_ITEM_SCHEMA },
               },
+            },
+          },
+        },
+      },
+      400: {
+        description: "Invalid cursor",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: { message: { type: "string" } },
             },
           },
         },
@@ -266,62 +325,48 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      const baseQuery = knex("cases as case")
-        .join("victims as victim", "case.victimId", "victim.id")
-        .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
-        .where((builder) => {
-          if (ctx.query.fromDate) {
-            builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-          }
-          if (ctx.query.toDate) {
-            builder.where("case.occurredAt", "<", ctx.query.toDate);
-          }
-          if (ctx.query.province) {
-            builder.where("case.province", ctx.query.province);
-          }
-          if (ctx.query.location) {
-            builder.whereUnaccentedMatch("case.location", ctx.query.location);
-          }
-          if (ctx.query.caseCategory) {
-            builder.where("case.caseCategory", ctx.query.caseCategory);
-          }
-          if (ctx.query.victimFullName) {
-            builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-          }
-          if (ctx.query.murderWeapon) {
-            builder.where("case.murderWeapon", ctx.query.murderWeapon);
-          }
-          if (ctx.query.aggressorFullName) {
-            builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
-          }
-          if (ctx.query.victimBondAggressor) {
-            builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
-          }
-          if (ctx.query.wasItAnAttempt) {
-            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
-          }
-        })
-        .orderBy("case.occurredAt", "desc");
+      const limit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 50;
 
-      const results = await baseQuery.toNestedObjects({
-        rootQualifier: "case",
-        fields: [
-          "case.id",
-          "case.caseCategory",
-          "case.occurredAt",
-          "case.province",
-          "case.location",
-          "case.murderWeapon",
-          "case.victimBondAggressor",
-          "case.wasItAnAttempt",
-          "victim.fullName",
-          "victim.age",
-          "aggressor.fullName",
-          "aggressor.age",
-        ],
-      });
+      let cursorData = null;
+      if (ctx.query.start) {
+        try {
+          cursorData = decodeCursor(ctx.query.start);
+        } catch (e) {
+          if (e instanceof CursorError) {
+            ctx.status = 400;
+            ctx.body = { message: "Invalid cursor" };
+            return;
+          }
+          throw e;
+        }
+      }
 
-      ctx.body = results;
+      let dataQuery = buildBaseQuery(ctx.query);
+      if (cursorData) {
+        dataQuery = dataQuery.where((b) => {
+          b.where("case.occurredAt", "<", cursorData.occurredAt)
+            .orWhere((b2) => {
+              b2.where("case.occurredAt", cursorData.occurredAt)
+                .where("case.id", "<", cursorData.id);
+            });
+        });
+      }
+      dataQuery = dataQuery
+        .orderBy("case.occurredAt", "desc")
+        .orderBy("case.id", "desc")
+        .limit(limit);
+
+      const [page, [{ count }]] = await Promise.all([
+        dataQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
+        buildBaseQuery(ctx.query).count("case.id as count"),
+      ]);
+
+      const total = Number(count);
+      const next = (page.length === limit && limit > 0)
+        ? encodeCursor(page[page.length - 1].occurredAt, page[page.length - 1].id)
+        : null;
+
+      ctx.body = { limit, total, start: ctx.query.start ?? null, next, page };
     },
   ],
 });
