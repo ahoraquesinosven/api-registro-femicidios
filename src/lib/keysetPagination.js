@@ -24,6 +24,11 @@ export function keysetPaginator(keys) {
     encode(row) {
       const payload = keys.map((k) => {
         const v = row[k.name];
+        // A "date" key must round-trip as YYYY-MM-DD so the cursor passes its
+        // own decode validator; toISOString() would emit a full datetime.
+        if (k.type === "date" && v instanceof Date) {
+          return v.toISOString().slice(0, 10);
+        }
         return v instanceof Date ? v.toISOString() : v;
       });
       return Buffer.from(JSON.stringify(payload)).toString("base64url");

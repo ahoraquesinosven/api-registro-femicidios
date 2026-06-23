@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start:dev": "node --watch-path=./src src/index.js",
-    "start:prod": "node src/index.js"
+    "start:prod": "node src/index.js",
+    "test:integration": "node test/integration/setup/prepare-db.js && node --test --test-concurrency=1 test/integration/*.test.js"
   },
   "repository": {
     "type": "git",

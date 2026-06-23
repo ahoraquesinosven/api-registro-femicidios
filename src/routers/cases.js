@@ -13,6 +13,11 @@ const casesPaginator = keysetPaginator([
   { name: "id", column: "case.id", direction: "desc", type: "id" },
 ]);
 
+// occurredAt is a `date` column; pg returns it as a JS Date. Responses expose it
+// as a plain YYYY-MM-DD string (a date has no time component).
+const toDateString = (value) =>
+  value instanceof Date ? value.toISOString().slice(0, 10) : value;
+
 const caseValidations = (body) => {
   const errors = [];
 
@@ -362,7 +367,13 @@ router.operation({
         ? casesPaginator.encode(page[page.length - 1])
         : null;
 
-      ctx.body = { limit, total, start: ctx.query.start ?? null, next, page };
+      ctx.body = {
+        limit,
+        total,
+        start: ctx.query.start ?? null,
+        next,
+        page: page.map((item) => ({ ...item, occurredAt: toDateString(item.occurredAt) })),
+      };
     },
   ],
 });
@@ -614,7 +625,7 @@ router.operation({
         return;
       }
 
-      ctx.body = cases[0];
+      ctx.body = { ...cases[0], occurredAt: toDateString(cases[0].occurredAt) };
     },
   ],
 });

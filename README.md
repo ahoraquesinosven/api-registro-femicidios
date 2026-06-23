@@ -33,6 +33,28 @@ docker compose up
 
 To check the API open swagger in http://localhost:8081/ 
 
+## Testing
+
+### Integration tests
+
+Integration tests exercise the real HTTP stack against a real PostgreSQL
+database. They run inside the dev container against a dedicated test database
+(`observatorio-femicidios-test`) on the same db instance, kept separate from
+your development data. From the host:
+
+```bash
+./bin/run-integration-tests
+```
+
+This stands up the database, waits for it, creates/migrates the test database,
+and runs the suite (`npm run test:integration`). The tests live under
+`test/integration/`.
+
+### Unit tests
+
+Unit tests (nimble, parallel, no database) will live under `test/unit/` and run
+via `npm test`. None exist yet.
+
 ## Running only API or with Frontend
 - To run just the API, remember to go to `.env` file and comment the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb`
 - To run the API and the Frontend together, go to `.env` file and review the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb` is NOT commented.

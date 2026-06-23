@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stands up the database and runs the integration test suite end-to-end, from
+# the host. Integration tests need a real Postgres; they run inside the dev
+# container against a dedicated test database on the same instance.
+#
+# Unit tests (added later) are nimble and DB-free — run those with `npm test`.
+
+# Run from the repository root (this script lives in bin/).
+cd "$(dirname "$0")/.."
+
+# Dedicated test database on the same db instance (separate from the dev db).
+TEST_DB_URL="postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios-test"
+
+echo "Starting db..."
+docker compose up -d db
+
+echo "Waiting for db..."
+until docker compose exec -T db pg_isready -U vivas -d observatorio-femicidios >/dev/null 2>&1; do
+  sleep 1
+done
+
+echo "Running integration tests..."
+docker compose run --rm \
+  -e DB_CONNECTION_STRING="$TEST_DB_URL" \
+  dev npm run test:integration
