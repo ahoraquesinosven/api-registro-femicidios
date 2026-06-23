@@ -1,4 +1,5 @@
 import knex from "../services/knex.js";
+import { keysetPaginator } from "../lib/keysetPagination.js";
 
 const feedItemsTable = () => knex("feedItems");
 
@@ -77,33 +78,33 @@ export async function insertNewFeedItems(feedItems) {
     .onConflict().ignore();
 }
 
-const feedItemsSortCriteria = {
-  backlog: {
-    field: "publishedAt",
-    order: "asc",
-    operator: ">",
-  },
+const feedItemPaginators = {
+  backlog: keysetPaginator([
+    { name: "publishedAt", column: "feedItems.publishedAt", direction: "asc", type: "datetime" },
+  ]),
 };
+const defaultFeedItemPaginator = keysetPaginator([
+  { name: "updatedAt", column: "feedItems.updatedAt", direction: "desc", type: "datetime" },
+]);
 
 export async function fetchFeedItems({ status, limit, start }) {
-  const sortCriteria = feedItemsSortCriteria[status] || { field: "updatedAt", order: "desc", operator: "<" };
+  const paginator = feedItemPaginators[status] || defaultFeedItemPaginator;
 
-  const baseQuery = feedItemsQuery()
-    .orderBy(`feedItems.${sortCriteria.field}`, sortCriteria.order);
+  let baseQuery = paginator.applyOrder(feedItemsQuery());
 
   if (limit) {
     baseQuery.limit(limit);
   }
 
   if (start) {
-    baseQuery.where(`feedItems.${sortCriteria.field}`, sortCriteria.operator, start);
+    baseQuery = paginator.applyCursor(baseQuery, paginator.decode(start));
   }
 
   const records = await applyStatusFilter(baseQuery, status);
 
   return {
     result: records,
-    cursor: records.length > 0 ? records[records.length - 1][sortCriteria.field] : null,
+    cursor: records.length > 0 ? paginator.encode(records[records.length - 1]) : null,
   };
 }
 

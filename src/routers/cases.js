@@ -2,11 +2,16 @@ import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
 import { omit } from "../lib/fn.js"
-import { encodeCursor, decodeCursor, CursorError } from "../lib/cursor.js"
+import { keysetPaginator, CursorError } from "../lib/keysetPagination.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
 });
+
+const casesPaginator = keysetPaginator([
+  { name: "occurredAt", column: "case.occurredAt", direction: "desc", type: "date" },
+  { name: "id", column: "case.id", direction: "desc", type: "id" },
+]);
 
 const caseValidations = (body) => {
   const errors = [];
@@ -330,7 +335,7 @@ router.operation({
       let cursorData = null;
       if (ctx.query.start) {
         try {
-          cursorData = decodeCursor(ctx.query.start);
+          cursorData = casesPaginator.decode(ctx.query.start);
         } catch (e) {
           if (e instanceof CursorError) {
             ctx.status = 400;
@@ -343,18 +348,9 @@ router.operation({
 
       let dataQuery = buildBaseQuery(ctx.query);
       if (cursorData) {
-        dataQuery = dataQuery.where((b) => {
-          b.where("case.occurredAt", "<", cursorData.occurredAt)
-            .orWhere((b2) => {
-              b2.where("case.occurredAt", cursorData.occurredAt)
-                .where("case.id", "<", cursorData.id);
-            });
-        });
+        dataQuery = casesPaginator.applyCursor(dataQuery, cursorData);
       }
-      dataQuery = dataQuery
-        .orderBy("case.occurredAt", "desc")
-        .orderBy("case.id", "desc")
-        .limit(limit);
+      dataQuery = casesPaginator.applyOrder(dataQuery).limit(limit);
 
       const [page, [{ count }]] = await Promise.all([
         dataQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
@@ -363,7 +359,7 @@ router.operation({
 
       const total = Number(count);
       const next = (page.length === limit && limit > 0)
-        ? encodeCursor(page[page.length - 1].occurredAt, page[page.length - 1].id)
+        ? casesPaginator.encode(page[page.length - 1])
         : null;
 
       ctx.body = { limit, total, start: ctx.query.start ?? null, next, page };
