@@ -2,7 +2,7 @@ import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
 import { omit, omitNullValues } from "../lib/fn.js"
-import { keysetPaginator, CursorError } from "../lib/keysetPagination.js"
+import { keysetPaginator } from "../lib/keysetPagination.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
@@ -316,74 +316,64 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      try {
-        const limit = ctx.query.limit !== undefined ?
-          Number(ctx.query.limit) :
-          50;
+      const limit = ctx.query.limit !== undefined ?
+        Number(ctx.query.limit) :
+        50;
 
-        const cursorData = casesPaginator.decode(ctx.query.start);
+      const baseQuery = knex("cases as case")
+        .join("victims as victim", "case.victimId", "victim.id")
+        .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
+        .where((builder) => {
+          if (ctx.query.fromDate) builder.where("case.occurredAt", ">=", ctx.query.fromDate);
+          if (ctx.query.toDate) builder.where("case.occurredAt", "<", ctx.query.toDate);
+          if (ctx.query.province) builder.where("case.province", ctx.query.province);
+          if (ctx.query.location) builder.whereUnaccentedMatch("case.location", ctx.query.location);
+          if (ctx.query.caseCategory) builder.where("case.caseCategory", ctx.query.caseCategory);
+          if (ctx.query.victimFullName) builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
+          if (ctx.query.murderWeapon) builder.where("case.murderWeapon", ctx.query.murderWeapon);
+          if (ctx.query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
+          if (ctx.query.victimBondAggressor) builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
+          if (ctx.query.wasItAnAttempt) builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
+        });
 
-        const baseQuery = knex("cases as case")
-          .join("victims as victim", "case.victimId", "victim.id")
-          .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
-          .where((builder) => {
-            if (ctx.query.fromDate) builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-            if (ctx.query.toDate) builder.where("case.occurredAt", "<", ctx.query.toDate);
-            if (ctx.query.province) builder.where("case.province", ctx.query.province);
-            if (ctx.query.location) builder.whereUnaccentedMatch("case.location", ctx.query.location);
-            if (ctx.query.caseCategory) builder.where("case.caseCategory", ctx.query.caseCategory);
-            if (ctx.query.victimFullName) builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-            if (ctx.query.murderWeapon) builder.where("case.murderWeapon", ctx.query.murderWeapon);
-            if (ctx.query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
-            if (ctx.query.victimBondAggressor) builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
-            if (ctx.query.wasItAnAttempt) builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
-          });
+      // Count the full filtered set. Knex builders are mutable and
+      // applyCursor/applyOrder/limit all return the same instance, so the
+      // count needs its own clone taken before those mutate baseQuery —
+      // otherwise count(case.id) lands on the page query (no GROUP BY).
+      const countQuery = baseQuery.clone().count("case.id as count");
 
-        // Count the full filtered set. Knex builders are mutable and
-        // applyCursor/applyOrder/limit all return the same instance, so the
-        // count needs its own clone taken before those mutate baseQuery —
-        // otherwise count(case.id) lands on the page query (no GROUP BY).
-        const countQuery = baseQuery.clone().count("case.id as count");
+      const cursorData = casesPaginator.decode(ctx.query.start);
+      const pageQuery = casesPaginator
+        .applyOrder(casesPaginator.applyCursor(baseQuery, cursorData))
+        .limit(limit);
 
-        const pageQuery = casesPaginator
-          .applyOrder(casesPaginator.applyCursor(baseQuery, cursorData))
-          .limit(limit);
+      const [page, [{ count }]] = await Promise.all([
+        pageQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
+        countQuery,
+      ]);
 
-        const [page, [{ count }]] = await Promise.all([
-          pageQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
-          countQuery,
-        ]);
+      const total = Number(count);
+      const next = (page.length === limit && limit > 0)
+        ? casesPaginator.encode(page[page.length - 1])
+        : null;
 
-        const total = Number(count);
-        const next = (page.length === limit && limit > 0)
-          ? casesPaginator.encode(page[page.length - 1])
-          : null;
-
-        ctx.body = {
-          limit,
-          total,
-          start: ctx.query.start ?? null,
-          next,
-          // Optional fields are non-nullable in the Case schema, so drop the
-          // null-valued keys the DB returns for unset fields rather than
-          // emitting them and breaking spec conformance.
-          page: page.map((item) =>
-            omitNullValues({
-              ...item,
-              occurredAt: toDateString(item.occurredAt),
-              victim: omitNullValues(item.victim),
-              aggressor: omitNullValues(item.aggressor),
-            }),
-          ),
-        };
-      } catch (e) {
-        if (e instanceof CursorError) {
-          ctx.status = 400;
-          ctx.body = { message: "Invalid cursor" };
-          return;
-        }
-        throw e;
-      }
+      ctx.body = {
+        limit,
+        total,
+        start: ctx.query.start ?? null,
+        next,
+        // Optional fields are non-nullable in the Case schema, so drop the
+        // null-valued keys the DB returns for unset fields rather than
+        // emitting them and breaking spec conformance.
+        page: page.map((item) =>
+          omitNullValues({
+            ...item,
+            occurredAt: toDateString(item.occurredAt),
+            victim: omitNullValues(item.victim),
+            aggressor: omitNullValues(item.aggressor),
+          }),
+        ),
+      };
     },
   ],
 });

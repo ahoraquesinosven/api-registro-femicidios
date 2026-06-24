@@ -2,7 +2,6 @@ import {fetchAllRssFeeds} from "../services/google/alerts.js";
 import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems, markIrrelevantFeedItem, unmarkIrrelevantFeedItem} from "../data/feedItem.js";
 import {OpenApiRouter} from "../openapi/index.js";
 import {securitySchemes} from "../openapi/securitySchemes.js";
-import {CursorError} from "../lib/keysetPagination.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/feed",
@@ -83,20 +82,10 @@ router.operation({
   handlers: [async (ctx) => {
     const {status, limit, start} = ctx.request.query;
 
-    let items, count;
-    try {
-      [items, count] = await Promise.all([
-        fetchFeedItems({status, limit, start}),
-        countFeedItems(status),
-      ]);
-    } catch (e) {
-      if (e instanceof CursorError) {
-        ctx.status = 400;
-        ctx.body = { message: "Invalid cursor" };
-        return;
-      }
-      throw e;
-    }
+    const [items, count] = await Promise.all([
+      fetchFeedItems({status, limit, start}),
+      countFeedItems(status),
+    ]);
 
     ctx.body = {
       limit: parseInt(limit),
