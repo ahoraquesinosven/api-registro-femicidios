@@ -48,7 +48,16 @@ your development data. From the host:
 
 This stands up the database, waits for it, creates/migrates the test database,
 and runs the suite (`npm run test:integration`). The tests live under
-`test/integration/`.
+`test/integration/`. The server under test and the test runner run as separate
+containers, so their logs never interleave.
+
+When the run finishes the containers are stopped but not removed, so the
+server-under-test logs stay reachable. To inspect them after the tests are
+done:
+
+```bash
+docker compose logs test-api-server
+```
 
 ### Unit tests
 

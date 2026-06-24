@@ -4,10 +4,10 @@ set -euo pipefail
 # Runs the integration suite end-to-end from the host, with the server and the
 # test runner as separate containers so their logs never interleave:
 #
-#   db-test    ephemeral Postgres (tmpfs)
-#   test-api   the server under test, listening on :8080      (own stdout)
-#   test-api   a second container running the test runner,    (own stdout)
-#              hitting the server above via TEST_TARGET_URL
+#   test-db           ephemeral Postgres (tmpfs)
+#   test-api-server   the server under test, listening on :8080   (own stdout)
+#   test-api-server   a second container running the test runner, (own stdout)
+#                     hitting the server above via TEST_TARGET_URL
 #
 # All three come from the `test` Compose profile, so `docker compose up` never
 # starts them.
@@ -18,7 +18,7 @@ cd "$(dirname "$0")/.."
 # Stop (not remove) the containers on exit, however we exit: frees resources but
 # keeps the containers around so their logs stay reachable afterwards with:
 #
-#   docker compose logs test-api
+#   docker compose logs test-api-server
 #
 cleanup() {
   docker compose --profile test stop
@@ -26,14 +26,14 @@ cleanup() {
 trap cleanup EXIT
 
 # Start from a clean slate: remove any stack left by a previous run. We recreate
-# rather than restart because db-test is on tmpfs and can't restart from stopped.
+# rather than restart because test-db is on tmpfs and can't restart from stopped.
 docker compose --profile test down
 
 echo "Starting test db and server..."
-docker compose --profile test up -d --wait db-test test-api
+docker compose --profile test up -d --wait test-db test-api-server
 
 echo "Applying migrations..."
-docker compose run --rm test-api knex migrate:latest
+docker compose run --rm test-api-server knex migrate:latest
 
 echo "Running integration tests..."
-docker compose run --rm test-api npm run test:integration
+docker compose run --rm test-api-server npm run test:integration

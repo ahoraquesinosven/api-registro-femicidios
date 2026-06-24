@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All commands run inside Docker. No local Node/npm needed.
 
-`HOST_UID` and `HOST_GID` (used by the `dev`/`test-api` services) are written to
+`HOST_UID` and `HOST_GID` (used by the `dev`/`test-api-server` services) are written to
 `.env` by `./bin/setup-local-env` and loaded automatically. Never pass them on
 the CLI — just run `docker compose ...` directly.
 
@@ -25,6 +25,12 @@ docker compose run dev knex migrate:make <name> --migrations-directory ./migrati
 
 # Run a one-off command (lint, scripts, etc.)
 docker compose run --rm --entrypoint /bin/bash dev -c "<cmd>"
+
+# Run the integration test suite end-to-end (test db + server + runner)
+./bin/run-integration-tests
+
+# Inspect server-under-test logs after a run (containers are stopped, not removed)
+docker compose logs test-api-server
 ```
 
 Swagger UI: http://localhost:8081/ (requires `docker compose up`)
