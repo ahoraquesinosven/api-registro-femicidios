@@ -1,21 +1,17 @@
-import {before, after, beforeEach} from "node:test";
+import {after, beforeEach} from "node:test";
 
-import {startTestServer, stopTestServer} from "./server.js";
 import {resetDb, closeDb} from "./db.js";
 import {seedTestUser, bearerFor} from "./auth.js";
 
-// Registers the standard lifecycle for an endpoint test file: start the server
-// once, reset the DB + seed a fresh user before each test, tear down at the end.
+// Registers the standard lifecycle for an endpoint test file: reset the DB +
+// seed a fresh user before each test, close the DB pool at the end. The server
+// itself runs as a separate container (see helpers/server.js), so there's
+// nothing to start or stop here.
 // Returns a context object whose `user`/`bearer` are refreshed before each test.
 export function useTestHarness() {
   const ctx = {user: null, bearer: null};
 
-  before(async () => {
-    await startTestServer();
-  });
-
   after(async () => {
-    await stopTestServer();
     await closeDb();
   });
 

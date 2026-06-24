@@ -2,6 +2,10 @@ import Ajv2019 from "ajv/dist/2019.js";
 import addFormats from "ajv-formats";
 import schemas from "../../../src/openapi/schemas.js";
 import {openApiDocument} from "../../../src/openapi/document.js";
+// Registering the routers populates openApiDocument.paths as a side effect.
+// The server runs in a separate container now, so the test process must trigger
+// this itself rather than relying on importing the app.
+import "../../../src/routers/index.js";
 
 // Mirrors the request-validation setup in src/openapi/validations.js so response
 // conformance is checked the same way the app validates requests. Injecting

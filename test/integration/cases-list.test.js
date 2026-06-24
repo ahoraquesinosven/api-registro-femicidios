@@ -39,9 +39,6 @@ test("returns a paginated page", async () => {
 
 test(
   "page conforms to the OpenAPI spec",
-  {
-    todo: "CASE_ITEM_SCHEMA has wrong $refs (murderWeapon, victimBondAggressor) and types optional fields non-nullable",
-  },
   async () => {
     await createCase();
     const res = await api("/v1/cases", {headers: {authorization: ctx.bearer}});

@@ -1,7 +1,7 @@
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
-import { omit } from "../lib/fn.js"
+import { omit, omitNullValues } from "../lib/fn.js"
 import { keysetPaginator, CursorError } from "../lib/keysetPagination.js"
 
 const router = new OpenApiRouter({
@@ -13,8 +13,6 @@ const casesPaginator = keysetPaginator([
   { name: "id", column: "case.id", direction: "desc", type: "id" },
 ]);
 
-// occurredAt is a `date` column; pg returns it as a JS Date. Responses expose it
-// as a plain YYYY-MM-DD string (a date has no time component).
 const toDateString = (value) =>
   value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
@@ -186,23 +184,6 @@ const LIST_FIELDS = [
   "aggressor.age",
 ];
 
-const buildBaseQuery = (query) =>
-  knex("cases as case")
-    .join("victims as victim", "case.victimId", "victim.id")
-    .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
-    .where((builder) => {
-      if (query.fromDate) builder.where("case.occurredAt", ">=", query.fromDate);
-      if (query.toDate) builder.where("case.occurredAt", "<", query.toDate);
-      if (query.province) builder.where("case.province", query.province);
-      if (query.location) builder.whereUnaccentedMatch("case.location", query.location);
-      if (query.caseCategory) builder.where("case.caseCategory", query.caseCategory);
-      if (query.victimFullName) builder.whereNameMatch("victim.fullName", query.victimFullName);
-      if (query.murderWeapon) builder.where("case.murderWeapon", query.murderWeapon);
-      if (query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", query.aggressorFullName);
-      if (query.victimBondAggressor) builder.where("case.victimBondAggressor", query.victimBondAggressor);
-      if (query.wasItAnAttempt) builder.where("case.wasItAnAttempt", query.wasItAnAttempt);
-    });
-
 const CASE_ITEM_SCHEMA = {
   type: "object",
   required: ["id", "occurredAt", "province", "victim", "aggressor", "caseCategory"],
@@ -212,9 +193,9 @@ const CASE_ITEM_SCHEMA = {
     occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
     province: { $ref: "#/components/schemas/Case/properties/province" },
     location: { $ref: "#/components/schemas/Case/properties/location" },
-    murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
-    victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
-    wasItAnAttempt: { type: "boolean" },
+    murderWeapon: { $ref: "#/components/schemas/Case/properties/murderWeapon" },
+    victimBondAggressor: { $ref: "#/components/schemas/Case/properties/victimBondAggressor" },
+    wasItAnAttempt: { $ref: "#/components/schemas/Case/properties/wasItAnAttempt" },
     victim: {
       type: "object",
       properties: {
@@ -335,45 +316,74 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      const limit = ctx.query.limit !== undefined ? Number(ctx.query.limit) : 50;
+      try {
+        const limit = ctx.query.limit !== undefined ?
+          Number(ctx.query.limit) :
+          50;
 
-      let cursorData = null;
-      if (ctx.query.start) {
-        try {
-          cursorData = casesPaginator.decode(ctx.query.start);
-        } catch (e) {
-          if (e instanceof CursorError) {
-            ctx.status = 400;
-            ctx.body = { message: "Invalid cursor" };
-            return;
-          }
-          throw e;
+        const cursorData = casesPaginator.decode(ctx.query.start);
+
+        const baseQuery = knex("cases as case")
+          .join("victims as victim", "case.victimId", "victim.id")
+          .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
+          .where((builder) => {
+            if (ctx.query.fromDate) builder.where("case.occurredAt", ">=", ctx.query.fromDate);
+            if (ctx.query.toDate) builder.where("case.occurredAt", "<", ctx.query.toDate);
+            if (ctx.query.province) builder.where("case.province", ctx.query.province);
+            if (ctx.query.location) builder.whereUnaccentedMatch("case.location", ctx.query.location);
+            if (ctx.query.caseCategory) builder.where("case.caseCategory", ctx.query.caseCategory);
+            if (ctx.query.victimFullName) builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
+            if (ctx.query.murderWeapon) builder.where("case.murderWeapon", ctx.query.murderWeapon);
+            if (ctx.query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
+            if (ctx.query.victimBondAggressor) builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
+            if (ctx.query.wasItAnAttempt) builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
+          });
+
+        // Count the full filtered set. Knex builders are mutable and
+        // applyCursor/applyOrder/limit all return the same instance, so the
+        // count needs its own clone taken before those mutate baseQuery —
+        // otherwise count(case.id) lands on the page query (no GROUP BY).
+        const countQuery = baseQuery.clone().count("case.id as count");
+
+        const pageQuery = casesPaginator
+          .applyOrder(casesPaginator.applyCursor(baseQuery, cursorData))
+          .limit(limit);
+
+        const [page, [{ count }]] = await Promise.all([
+          pageQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
+          countQuery,
+        ]);
+
+        const total = Number(count);
+        const next = (page.length === limit && limit > 0)
+          ? casesPaginator.encode(page[page.length - 1])
+          : null;
+
+        ctx.body = {
+          limit,
+          total,
+          start: ctx.query.start ?? null,
+          next,
+          // Optional fields are non-nullable in the Case schema, so drop the
+          // null-valued keys the DB returns for unset fields rather than
+          // emitting them and breaking spec conformance.
+          page: page.map((item) =>
+            omitNullValues({
+              ...item,
+              occurredAt: toDateString(item.occurredAt),
+              victim: omitNullValues(item.victim),
+              aggressor: omitNullValues(item.aggressor),
+            }),
+          ),
+        };
+      } catch (e) {
+        if (e instanceof CursorError) {
+          ctx.status = 400;
+          ctx.body = { message: "Invalid cursor" };
+          return;
         }
+        throw e;
       }
-
-      let dataQuery = buildBaseQuery(ctx.query);
-      if (cursorData) {
-        dataQuery = casesPaginator.applyCursor(dataQuery, cursorData);
-      }
-      dataQuery = casesPaginator.applyOrder(dataQuery).limit(limit);
-
-      const [page, [{ count }]] = await Promise.all([
-        dataQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
-        buildBaseQuery(ctx.query).count("case.id as count"),
-      ]);
-
-      const total = Number(count);
-      const next = (page.length === limit && limit > 0)
-        ? casesPaginator.encode(page[page.length - 1])
-        : null;
-
-      ctx.body = {
-        limit,
-        total,
-        start: ctx.query.start ?? null,
-        next,
-        page: page.map((item) => ({ ...item, occurredAt: toDateString(item.occurredAt) })),
-      };
     },
   ],
 });

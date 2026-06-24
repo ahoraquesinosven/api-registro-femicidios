@@ -1,23 +1,12 @@
-import app from "../../../src/app.js";
-
-let server;
-let baseUrl;
-
-export async function startTestServer() {
-  await new Promise((resolve) => {
-    server = app.listen(0, resolve);
-  });
-  const {port} = server.address();
-  baseUrl = `http://127.0.0.1:${port}`;
-  return baseUrl;
-}
-
-export async function stopTestServer() {
-  if (!server) {
-    return;
-  }
-  await new Promise((resolve) => server.close(resolve));
-  server = undefined;
+// The server runs as a separate container (the `test-api` service); tests reach
+// it over HTTP at TEST_TARGET_URL. Keeping it out-of-process means the server's
+// logs and the test runner's output land on separate stdouts instead of
+// interleaving in one process.
+const baseUrl = process.env.TEST_TARGET_URL;
+if (!baseUrl) {
+  throw new Error(
+    "TEST_TARGET_URL is required (set by the test-api service in compose.yml)",
+  );
 }
 
 // Thin fetch wrapper: prefixes the base URL and JSON-encodes the body.

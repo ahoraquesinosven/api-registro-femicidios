@@ -1,27 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Stands up the database and runs the integration test suite end-to-end, from
-# the host. Integration tests need a real Postgres; they run inside the dev
-# container against a dedicated test database on the same instance.
+# Runs the integration suite end-to-end from the host, with the server and the
+# test runner as separate containers so their logs never interleave:
 #
-# Unit tests (added later) are nimble and DB-free — run those with `npm test`.
+#   db-test    ephemeral Postgres (tmpfs)
+#   test-api   the server under test, listening on :8080      (own stdout)
+#   test-api   a second container running the test runner,    (own stdout)
+#              hitting the server above via TEST_TARGET_URL
+#
+# All three come from the `test` Compose profile, so `docker compose up` never
+# starts them.
 
 # Run from the repository root (this script lives in bin/).
 cd "$(dirname "$0")/.."
 
-# Dedicated test database on the same db instance (separate from the dev db).
-TEST_DB_URL="postgresql://vivas:nosqueremos@db:5432/observatorio-femicidios-test"
+# Stop (not remove) the containers on exit, however we exit: frees resources but
+# keeps the containers around so their logs stay reachable afterwards with:
+#
+#   docker compose logs test-api
+#
+cleanup() {
+  docker compose --profile test stop
+}
+trap cleanup EXIT
 
-echo "Starting db..."
-docker compose up -d db
+# Start from a clean slate: remove any stack left by a previous run. We recreate
+# rather than restart because db-test is on tmpfs and can't restart from stopped.
+docker compose --profile test down
 
-echo "Waiting for db..."
-until docker compose exec -T db pg_isready -U vivas -d observatorio-femicidios >/dev/null 2>&1; do
-  sleep 1
-done
+echo "Starting test db and server..."
+docker compose --profile test up -d --wait db-test test-api
+
+echo "Applying migrations..."
+docker compose run --rm test-api knex migrate:latest
 
 echo "Running integration tests..."
-docker compose run --rm \
-  -e DB_CONNECTION_STRING="$TEST_DB_URL" \
-  dev npm run test:integration
+docker compose run --rm test-api npm run test:integration

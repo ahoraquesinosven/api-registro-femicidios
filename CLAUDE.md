@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 All commands run inside Docker. No local Node/npm needed.
 
+`HOST_UID` and `HOST_GID` (used by the `dev`/`test-api` services) are written to
+`.env` by `./bin/setup-local-env` and loaded automatically. Never pass them on
+the CLI — just run `docker compose ...` directly.
+
 ```bash
 # First-time setup: create/complete .env (prompts for missing config) and run migrations
 ./bin/setup-local-env

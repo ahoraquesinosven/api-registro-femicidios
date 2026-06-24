@@ -35,6 +35,10 @@ export function keysetPaginator(keys) {
     },
 
     decode(token) {
+      if (!token) {
+        return null;
+      }
+
       try {
         const raw = Buffer.from(token, "base64url").toString("utf8");
         const parsed = JSON.parse(raw);
@@ -55,6 +59,10 @@ export function keysetPaginator(keys) {
     // Lexicographic keyset comparison: for keys [A, B] this yields
     //   (A op a) OR (A = a AND B op b)
     applyCursor(query, values) {
+      if (!values) {
+        return query;
+      }
+
       return query.where((b) => {
         keys.forEach((k, i) => {
           b.orWhere((sub) => {
