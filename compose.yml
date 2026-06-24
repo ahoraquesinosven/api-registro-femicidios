@@ -12,7 +12,6 @@ x-base-service-config: &base-service-config
     - './knexfile.mjs:/opt/project/knexfile.mjs'
     - './package.json:/opt/project/package.json'
     - './src:/opt/project/src'
-    - './spec:/opt/project/spec'
     - './migrations:/opt/project/migrations'
     - './test:/opt/project/test'
   env_file:
