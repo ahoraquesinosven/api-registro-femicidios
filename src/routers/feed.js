@@ -89,7 +89,7 @@ router.operation({
     ctx.body = {
       limit: parseInt(limit),
       total: parseInt(count),
-      start,
+      start: start ?? null,
       next: items.cursor,
       page: items.result.map(x => ({
         id: x.id,
