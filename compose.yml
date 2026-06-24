@@ -11,6 +11,7 @@ x-base-service-config: &base-service-config
   volumes:
     - './knexfile.mjs:/opt/project/knexfile.mjs'
     - './package.json:/opt/project/package.json'
+    - './redocly.yaml:/opt/project/redocly.yaml'
     - './src:/opt/project/src'
     - './migrations:/opt/project/migrations'
     - './test:/opt/project/test'

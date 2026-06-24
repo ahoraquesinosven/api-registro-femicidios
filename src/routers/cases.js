@@ -171,21 +171,6 @@ router.operation({
   ],
 });
 
-const LIST_FIELDS = [
-  "case.id",
-  "case.caseCategory",
-  "case.occurredAt",
-  "case.province",
-  "case.location",
-  "case.murderWeapon",
-  "case.victimBondAggressor",
-  "case.wasItAnAttempt",
-  "victim.fullName",
-  "victim.age",
-  "aggressor.fullName",
-  "aggressor.age",
-];
-
 router.operation({
   method: "get",
   relativePath: "/",
@@ -303,7 +288,23 @@ router.operation({
         .limit(limit);
 
       const [page, [{ count }]] = await Promise.all([
-        pageQuery.toNestedObjects({ rootQualifier: "case", fields: LIST_FIELDS }),
+        pageQuery.toNestedObjects({
+          rootQualifier: "case",
+          fields: [
+            "case.id",
+            "case.caseCategory",
+            "case.occurredAt",
+            "case.province",
+            "case.location",
+            "case.murderWeapon",
+            "case.victimBondAggressor",
+            "case.wasItAnAttempt",
+            "victim.fullName",
+            "victim.age",
+            "aggressor.fullName",
+            "aggressor.age",
+          ]
+        }),
         countQuery,
       ]);
 

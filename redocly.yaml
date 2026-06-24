@@ -1,0 +1,7 @@
+extends:
+  - recommended
+rules:
+  # The server URL comes from config.server.cannonicalOrigin, which is a
+  # localhost origin in dev/test. This rule flags non-production (example.com /
+  # localhost) server URLs, which is expected here.
+  no-server-example.com: off
