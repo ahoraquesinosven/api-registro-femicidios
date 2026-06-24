@@ -7,7 +7,10 @@
   "scripts": {
     "start:dev": "node --watch-path=./src src/index.js",
     "start:prod": "node src/index.js",
-    "test:integration": "node --test --test-concurrency=1 test/integration/*.test.js"
+    "test": "npm run validate:openapi",
+    "test:integration": "node --test --test-concurrency=1 test/integration/*.test.js",
+    "dump:openapi": "node src/scripts/dumpOpenapi.js /tmp/openapi.json",
+    "validate:openapi": "npm run dump:openapi && redocly lint /tmp/openapi.json"
   },
   "repository": {
     "type": "git",
@@ -33,5 +36,8 @@
     "pg": "^8.5.1",
     "rss-parser": "^3.13.0",
     "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.34.0"
   }
 }

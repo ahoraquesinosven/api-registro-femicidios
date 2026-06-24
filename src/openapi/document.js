@@ -8,6 +8,10 @@ export const openApiDocument = {
   info: {
     title: "AQSNV - Registro de Femicidios",
     version: "1.0.0",
+    license: {
+      name: "MIT",
+      url: "https://opensource.org/licenses/MIT",
+    },
   },
   servers: [
     {url: config.server.cannonicalOrigin},

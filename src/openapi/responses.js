@@ -40,5 +40,21 @@ export default {
       },
     },
 
-  }
+  },
+
+  InvalidCursorResponse: {
+    description: "Invalid cursor",
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: { message: { type: "string" } },
+        },
+      },
+    },
+  },
+
+  UnauthorizedResponse: {
+    description: "Missing or invalid authentication credentials",
+  },
 }

@@ -117,6 +117,7 @@ router.operation({
   relativePath: "/",
   spec: {
     tags: ["cases"],
+    operationId: "createCase",
     summary: "Create a new case",
     security: [securitySchemes.oauth, securitySchemes.internal],
     requestBody: {
@@ -131,6 +132,7 @@ router.operation({
       201: {
         description: "Case created successfully",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
     },
   },
@@ -184,40 +186,12 @@ const LIST_FIELDS = [
   "aggressor.age",
 ];
 
-const CASE_ITEM_SCHEMA = {
-  type: "object",
-  required: ["id", "occurredAt", "province", "victim", "aggressor", "caseCategory"],
-  properties: {
-    id: { type: "integer" },
-    caseCategory: { $ref: "#/components/schemas/Case/properties/caseCategory" },
-    occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
-    province: { $ref: "#/components/schemas/Case/properties/province" },
-    location: { $ref: "#/components/schemas/Case/properties/location" },
-    murderWeapon: { $ref: "#/components/schemas/Case/properties/murderWeapon" },
-    victimBondAggressor: { $ref: "#/components/schemas/Case/properties/victimBondAggressor" },
-    wasItAnAttempt: { $ref: "#/components/schemas/Case/properties/wasItAnAttempt" },
-    victim: {
-      type: "object",
-      properties: {
-        fullName: { $ref: "#/components/schemas/Case/properties/victim/properties/fullName" },
-        age: { $ref: "#/components/schemas/Case/properties/victim/properties/age" },
-      },
-    },
-    aggressor: {
-      type: "object",
-      properties: {
-        fullName: { $ref: "#/components/schemas/Case/properties/aggressor/properties/fullName" },
-        age: { $ref: "#/components/schemas/Case/properties/aggressor/properties/age" },
-      },
-    },
-  },
-};
-
 router.operation({
   method: "get",
   relativePath: "/",
   spec: {
     tags: ["cases"],
+    operationId: "listCases",
     summary: "List all cases",
     security: [securitySchemes.oauth],
     parameters: [
@@ -287,31 +261,12 @@ router.operation({
         description: "Paginated list of cases",
         content: {
           "application/json": {
-            schema: {
-              type: "object",
-              required: ["limit", "total", "start", "next", "page"],
-              properties: {
-                limit: { type: "integer" },
-                total: { type: "integer" },
-                start: { type: ["string", "null"] },
-                next: { type: ["string", "null"] },
-                page: { type: "array", items: CASE_ITEM_SCHEMA },
-              },
-            },
+            schema: { $ref: "#/components/schemas/CaseListPage" },
           },
         },
       },
-      400: {
-        description: "Invalid cursor",
-        content: {
-          "application/json": {
-            schema: {
-              type: "object",
-              properties: { message: { type: "string" } },
-            },
-          },
-        },
-      },
+      400: { $ref: "#/components/responses/InvalidCursorResponse" },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
     },
   },
   handlers: [
@@ -383,6 +338,7 @@ router.operation({
   relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
+    operationId: "updateCase",
     summary: "Update a case",
     security: [securitySchemes.oauth],
     parameters: [{
@@ -408,6 +364,7 @@ router.operation({
       204: {
         description: "Case updated successfully",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
       404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
@@ -532,6 +489,7 @@ router.operation({
   relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
+    operationId: "getCase",
     summary: "Get a case by id",
     security: [securitySchemes.oauth],
     parameters: [{
@@ -553,6 +511,7 @@ router.operation({
           },
         },
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
   },

@@ -61,8 +61,23 @@ docker compose logs test-api-server
 
 ### Unit tests
 
-Unit tests (nimble, parallel, no database) will live under `test/unit/` and run
-via `npm test`. None exist yet.
+Unit tests (nimble, parallel, no database) run via `npm test`. Future tests will
+live under `test/unit/`.
+
+Today the suite consists of OpenAPI validation: the spec is assembled at runtime
+from the route `operation()` calls, dumped to a file, and linted with
+[`@redocly/cli`](https://redocly.com/docs/cli/) against its `recommended`
+ruleset. This catches broken `$ref`s, unused/duplicate components, missing
+`operationId`s and other spec-conformance issues before they reach a running
+server. Run it on its own with:
+
+```bash
+docker compose run --rm --entrypoint /bin/bash dev -c "npm run validate:openapi"
+```
+
+`validate:openapi` runs `dump:openapi` (writes the document via
+`src/scripts/dumpOpenapi.js`) and then `redocly lint`. It's cheap and needs no
+database, so it doubles as our first quick unit test and is wired into `npm test`.
 
 ## Running only API or with Frontend
 - To run just the API, remember to go to `.env` file and comment the line `AUTH_PROVIDER_REDIRECT_URI=http://localhost:5173/oauth/cb`

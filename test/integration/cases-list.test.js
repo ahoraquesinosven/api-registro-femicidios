@@ -42,7 +42,7 @@ test(
   async () => {
     await createCase();
     const res = await api("/v1/cases", {headers: {authorization: ctx.bearer}});
-    assertConformsToSpec("get", "/v1/cases/", 200, await res.json());
+    assertConformsToSpec("get", "/v1/cases", 200, await res.json());
   },
 );
 
