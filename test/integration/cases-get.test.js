@@ -23,17 +23,11 @@ test("returns the requested case", async () => {
   assert.equal(body.id, 1);
 });
 
-test(
-  "response conforms to the OpenAPI spec",
-  {
-    todo: "GET /{id} validates against the request Case schema: it lacks `id` and types optional fields non-nullable",
-  },
-  async () => {
-    await createCase();
-    const res = await api("/v1/cases/1", {headers: {authorization: ctx.bearer}});
-    assertConformsToSpec("get", "/v1/cases/{caseId}", 200, await res.json());
-  },
-);
+test("response conforms to the OpenAPI spec", async () => {
+  await createCase();
+  const res = await api("/v1/cases/1", {headers: {authorization: ctx.bearer}});
+  assertConformsToSpec("get", "/v1/cases/{caseId}", 200, await res.json());
+});
 
 test("returns 404 for an unknown id", async () => {
   const res = await api("/v1/cases/9999", {headers: {authorization: ctx.bearer}});

@@ -625,7 +625,16 @@ router.operation({
         return;
       }
 
-      ctx.body = { ...cases[0], occurredAt: toDateString(cases[0].occurredAt) };
+      const c = cases[0];
+      // Optional fields are non-nullable in the Case schema, so drop the
+      // null-valued keys the DB returns for unset fields, mirroring the list
+      // handler, rather than emitting them and breaking spec conformance.
+      ctx.body = omitNullValues({
+        ...c,
+        occurredAt: toDateString(c.occurredAt),
+        victim: omitNullValues(c.victim),
+        aggressor: omitNullValues(c.aggressor),
+      });
     },
   ],
 });
