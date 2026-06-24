@@ -63,24 +63,35 @@ export function keysetPaginator(keys) {
         return query;
       }
 
-      return query.where((b) => {
-        keys.forEach((k, i) => {
-          b.orWhere((sub) => {
-            for (let j = 0; j < i; j++) {
-              sub.where(keys[j].column, values[j]);
-            }
-            sub.where(k.column, operatorFor(k.direction), values[i]);
-          });
-        });
-      });
+      const terms = keys.map((key, i) => ({
+        column: key.column,
+        operator: operatorFor(key.direction),
+        value: values[i],
+      }));
+
+      return query.where((outerBuilder) =>
+        terms.reduce(
+          ({ builder, priorTerms }, term) => ({
+            builder: builder.orWhere((clause) =>
+              priorTerms
+                .reduce(
+                  (equalities, prior) => equalities.where(prior.column, prior.value),
+                  clause,
+                )
+                .where(term.column, term.operator, term.value),
+            ),
+            priorTerms: [...priorTerms, term],
+          }),
+          { builder: outerBuilder, priorTerms: [] },
+        ).builder,
+      );
     },
 
     applyOrder(query) {
-      let q = query;
-      for (const k of keys) {
-        q = q.orderBy(k.column, k.direction);
-      }
-      return q;
+      return keys.reduce(
+        (orderedQuery, key) => orderedQuery.orderBy(key.column, key.direction),
+        query,
+      );
     },
   };
 }
