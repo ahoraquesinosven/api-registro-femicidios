@@ -1,48 +1,41 @@
+x-base-service-config: &base-service-config
+  image: observatorio/api-registro-femicidios
+  user: "${HOST_UID}:${HOST_GID}"
+  build:
+    context: .
+    target: development
+  develop:
+    watch:
+      - path: package.json
+        action: rebuild
+  volumes:
+    - './knexfile.mjs:/opt/project/knexfile.mjs'
+    - './package.json:/opt/project/package.json'
+    - './src:/opt/project/src'
+    - './spec:/opt/project/spec'
+    - './migrations:/opt/project/migrations'
+    - './test:/opt/project/test'
+  env_file:
+    - .env.defaults
+    - .env
+
 services:
   dev:
-    image: observatorio/api-registro-femicidios
-    user: "${HOST_UID}:${HOST_GID}"
-    build:
-      context: .
-      target: development
-    develop:
-      watch:
-        - path: package.json
-          action: rebuild
-    volumes:
-      - './knexfile.mjs:/opt/project/knexfile.mjs'
-      - './package.json:/opt/project/package.json'
-      - './src:/opt/project/src'
-      - './spec:/opt/project/spec'
-      - './migrations:/opt/project/migrations'
-      - './test:/opt/project/test'
+    <<: *base-service-config
     ports:
       - '8080:8080'
-    env_file:
-      - .env.defaults
-      - .env
 
   # Dedicated server-under-test, isolated from the dev server and its db.
   # Profiled so `docker compose up` skips it; runs only under `--profile test`
   # or when named explicitly (e.g. `docker compose run test-api ...`).
   test-api:
-    image: observatorio/api-registro-femicidios
-    user: "${HOST_UID}:${HOST_GID}"
-    build:
-      context: .
-      target: development
-    profiles: ["test"]
-    command: ["npm", "run", "start:prod"]
-    volumes:
-      - './knexfile.mjs:/opt/project/knexfile.mjs'
-      - './package.json:/opt/project/package.json'
-      - './src:/opt/project/src'
-      - './spec:/opt/project/spec'
-      - './migrations:/opt/project/migrations'
-      - './test:/opt/project/test'
-    env_file:
-      - .env.defaults
-      - .env
+    <<: *base-service-config
+    profiles:
+      - test
+    command:
+      - npm
+      - run
+      - start:prod
     environment:
       - DB_CONNECTION_STRING=postgresql://vivas:nosqueremos@db-test:5432/observatorio-femicidios-test
       - TEST_TARGET_URL=http://test-api:8080
@@ -50,7 +43,11 @@ services:
       db-test:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/v1/openapi.json').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:8080/v1/openapi.json').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 2s
       timeout: 5s
       retries: 30
@@ -80,7 +77,8 @@ services:
   # and never touches the dev `pgdata` volume.
   db-test:
     image: postgres:11
-    profiles: ["test"]
+    profiles:
+      - test
     tmpfs:
       - /var/lib/postgresql/data
     environment:
@@ -88,7 +86,9 @@ services:
       - POSTGRES_USER=vivas
       - POSTGRES_PASSWORD=nosqueremos
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vivas -d observatorio-femicidios-test"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U vivas -d observatorio-femicidios-test
       interval: 1s
       timeout: 3s
       retries: 30
