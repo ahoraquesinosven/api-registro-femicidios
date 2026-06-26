@@ -8,6 +8,7 @@ export default {
     "victim",
     "aggressor",
     "caseCategory",
+    "wasItAnAttempt",
   ],
   dependentRequired: {
     organizedCrimeNotes: ["isRelatedToOrganizedCrime"],
