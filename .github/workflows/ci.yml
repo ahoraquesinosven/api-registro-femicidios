@@ -15,4 +15,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      # OpenAPI validation boots the app config. NODE_ENV=ci relaxes the entries
+      # flagged optionalInCi (the Google OAuth secrets); .env.defaults supplies
+      # the rest, exactly as it does for local dev via compose's env_file.
+      - name: Validate OpenAPI document
+        run: |
+          set -a && . ./.env.defaults && set +a
+          npm test
+        env:
+          NODE_ENV: ci

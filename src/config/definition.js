@@ -22,14 +22,18 @@ export default {
 
   auth: {
     google: {
+      // Not in .env.defaults (real secrets, prompted into .env locally) and not
+      // exercised by CI's OpenAPI validation, so they may be absent in CI.
       clientId: entry({
         envKey: "AUTH_GOOGLE_CLIENT_ID",
         doc: "Google OpenID Client Id. See https://developers.google.com/identity/openid-connect/openid-connect#getcredentials",
+        optionalInCi: true,
       }),
 
       clientSecret: entry({
         envKey: "AUTH_GOOGLE_CLIENT_SECRET",
         doc: "Google OpenID Client Secret. See https://developers.google.com/identity/openid-connect/openid-connect#getcredentials",
+        optionalInCi: true,
       }),
     },
 
