@@ -11,6 +11,7 @@ export default {
     },
 
     properties: {
+        id: { type: "integer", readOnly: true },
         caseCategory: { $ref: "#/components/schemas/CaseCategory" },
         wasItAnAttempt: { type: "boolean" },
         isInsufficientDataOrUnderInvestigation: { type: "boolean" },

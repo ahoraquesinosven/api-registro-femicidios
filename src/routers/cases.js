@@ -1,11 +1,20 @@
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
-import { omit } from "../lib/fn.js"
+import { omit, omitNullValues } from "../lib/fn.js"
+import { keysetPaginator } from "../lib/keysetPagination.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
 });
+
+const casesPaginator = keysetPaginator([
+  { name: "occurredAt", column: "case.occurredAt", direction: "desc", type: "date" },
+  { name: "id", column: "case.id", direction: "desc", type: "id" },
+]);
+
+const toDateString = (value) =>
+  value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
 const caseValidations = (body) => {
   const errors = [];
@@ -108,6 +117,7 @@ router.operation({
   relativePath: "/",
   spec: {
     tags: ["cases"],
+    operationId: "createCase",
     summary: "Create a new case",
     security: [securitySchemes.oauth, securitySchemes.internal],
     requestBody: {
@@ -122,6 +132,7 @@ router.operation({
       201: {
         description: "Case created successfully",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
     },
   },
@@ -165,6 +176,7 @@ router.operation({
   relativePath: "/",
   spec: {
     tags: ["cases"],
+    operationId: "listCases",
     summary: "List all cases",
     security: [securitySchemes.oauth],
     parameters: [
@@ -218,110 +230,106 @@ router.operation({
         in: "query",
         schema: { type: "boolean" },
       },
-
-
+      {
+        name: "limit",
+        in: "query",
+        schema: { type: "integer", minimum: 0, maximum: 200, default: 50 },
+      },
+      {
+        name: "start",
+        in: "query",
+        schema: { type: "string" },
+      },
     ],
     responses: {
       200: {
-        description: "List of cases",
+        description: "Paginated list of cases",
         content: {
           "application/json": {
-            schema: {
-              type: "array",
-              items: {
-                type: "object",
-                required: [
-                  "id", "occurredAt", "province", "victim", "aggressor", "caseCategory",
-                ],
-                properties: {
-                  id: { type: "integer" },
-                  caseCategory: { $ref: "#/components/schemas/Case/properties/caseCategory" },
-                  occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
-                  province: { $ref: "#/components/schemas/Case/properties/province" },
-                  location: { $ref: "#/components/schemas/Case/properties/location" },
-                  murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
-                  victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
-                  wasItAnAttempt: { type: "boolean" },
-                  victim: {
-                    type: "object",
-                    properties: {
-                      fullName: { $ref: "#/components/schemas/Case/properties/victim/properties/fullName" },
-                      age: { $ref: "#/components/schemas/Case/properties/victim/properties/age" },
-                    },
-                  },
-                  aggressor: {
-                    type: "object",
-                    properties: {
-                      fullName: { $ref: "#/components/schemas/Case/properties/aggressor/properties/fullName" },
-                      age: { $ref: "#/components/schemas/Case/properties/aggressor/properties/age" },
-                    },
-                  },
-                },
-              },
-            },
+            schema: { $ref: "#/components/schemas/CaseListPage" },
           },
         },
       },
+      400: { $ref: "#/components/responses/InvalidCursorResponse" },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
     },
   },
   handlers: [
     async (ctx) => {
+      const limit = ctx.query.limit !== undefined ?
+        Number(ctx.query.limit) :
+        50;
+
       const baseQuery = knex("cases as case")
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where((builder) => {
-          if (ctx.query.fromDate) {
-            builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-          }
-          if (ctx.query.toDate) {
-            builder.where("case.occurredAt", "<", ctx.query.toDate);
-          }
-          if (ctx.query.province) {
-            builder.where("case.province", ctx.query.province);
-          }
-          if (ctx.query.location) {
-            builder.whereUnaccentedMatch("case.location", ctx.query.location);
-          }
-          if (ctx.query.caseCategory) {
-            builder.where("case.caseCategory", ctx.query.caseCategory);
-          }
-          if (ctx.query.victimFullName) {
-            builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-          }
-          if (ctx.query.murderWeapon) {
-            builder.where("case.murderWeapon", ctx.query.murderWeapon);
-          }
-          if (ctx.query.aggressorFullName) {
-            builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
-          }
-          if (ctx.query.victimBondAggressor) {
-            builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
-          }
-          if (ctx.query.wasItAnAttempt) {
-            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
-          }
-        })
-        .orderBy("case.occurredAt", "desc");
+          if (ctx.query.fromDate) builder.where("case.occurredAt", ">=", ctx.query.fromDate);
+          if (ctx.query.toDate) builder.where("case.occurredAt", "<", ctx.query.toDate);
+          if (ctx.query.province) builder.where("case.province", ctx.query.province);
+          if (ctx.query.location) builder.whereUnaccentedMatch("case.location", ctx.query.location);
+          if (ctx.query.caseCategory) builder.where("case.caseCategory", ctx.query.caseCategory);
+          if (ctx.query.victimFullName) builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
+          if (ctx.query.murderWeapon) builder.where("case.murderWeapon", ctx.query.murderWeapon);
+          if (ctx.query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
+          if (ctx.query.victimBondAggressor) builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
+          if (ctx.query.wasItAnAttempt) builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
+        });
 
-      const results = await baseQuery.toNestedObjects({
-        rootQualifier: "case",
-        fields: [
-          "case.id",
-          "case.caseCategory",
-          "case.occurredAt",
-          "case.province",
-          "case.location",
-          "case.murderWeapon",
-          "case.victimBondAggressor",
-          "case.wasItAnAttempt",
-          "victim.fullName",
-          "victim.age",
-          "aggressor.fullName",
-          "aggressor.age",
-        ],
-      });
+      // Count the full filtered set. Knex builders are mutable and
+      // applyCursor/applyOrder/limit all return the same instance, so the
+      // count needs its own clone taken before those mutate baseQuery —
+      // otherwise count(case.id) lands on the page query (no GROUP BY).
+      const countQuery = baseQuery.clone().count("case.id as count");
 
-      ctx.body = results;
+      const cursorData = casesPaginator.decode(ctx.query.start);
+      const pageQuery = casesPaginator
+        .applyOrder(casesPaginator.applyCursor(baseQuery, cursorData))
+        .limit(limit);
+
+      const [page, [{ count }]] = await Promise.all([
+        pageQuery.toNestedObjects({
+          rootQualifier: "case",
+          fields: [
+            "case.id",
+            "case.caseCategory",
+            "case.occurredAt",
+            "case.province",
+            "case.location",
+            "case.murderWeapon",
+            "case.victimBondAggressor",
+            "case.wasItAnAttempt",
+            "victim.fullName",
+            "victim.age",
+            "aggressor.fullName",
+            "aggressor.age",
+          ]
+        }),
+        countQuery,
+      ]);
+
+      const total = Number(count);
+      const next = (page.length === limit && limit > 0)
+        ? casesPaginator.encode(page[page.length - 1])
+        : null;
+
+      ctx.body = {
+        limit,
+        total,
+        start: ctx.query.start ?? null,
+        next,
+        // Optional fields are non-nullable in the Case schema, so drop the
+        // null-valued keys the DB returns for unset fields rather than
+        // emitting them and breaking spec conformance.
+        page: page.map((item) =>
+          omitNullValues({
+            ...item,
+            occurredAt: toDateString(item.occurredAt),
+            victim: omitNullValues(item.victim),
+            aggressor: omitNullValues(item.aggressor),
+          }),
+        ),
+      };
     },
   ],
 });
@@ -331,6 +339,7 @@ router.operation({
   relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
+    operationId: "updateCase",
     summary: "Update a case",
     security: [securitySchemes.oauth],
     parameters: [{
@@ -356,6 +365,7 @@ router.operation({
       204: {
         description: "Case updated successfully",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
       404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
@@ -480,6 +490,7 @@ router.operation({
   relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
+    operationId: "getCase",
     summary: "Get a case by id",
     security: [securitySchemes.oauth],
     parameters: [{
@@ -501,6 +512,7 @@ router.operation({
           },
         },
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
   },
@@ -573,7 +585,16 @@ router.operation({
         return;
       }
 
-      ctx.body = cases[0];
+      const c = cases[0];
+      // Optional fields are non-nullable in the Case schema, so drop the
+      // null-valued keys the DB returns for unset fields, mirroring the list
+      // handler, rather than emitting them and breaking spec conformance.
+      ctx.body = omitNullValues({
+        ...c,
+        occurredAt: toDateString(c.occurredAt),
+        victim: omitNullValues(c.victim),
+        aggressor: omitNullValues(c.aggressor),
+      });
     },
   ],
 });

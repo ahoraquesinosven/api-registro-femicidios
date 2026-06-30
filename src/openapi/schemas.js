@@ -1,4 +1,8 @@
 import caseSchema from "../openapi/schemas/case.js"
+import caseListItemSchema from "../openapi/schemas/caseListItem.js"
+import feedItemSchema from "../openapi/schemas/feedItem.js"
+import userProfileSchema from "../openapi/schemas/userProfile.js"
+import { paginatedEnvelope } from "../openapi/schemas/pagination.js"
 import allGenders from "../data/genders.js";
 import allProvinces from "../data/provinces.js";
 import allCaseCategories from "../data/caseCategories.js";
@@ -26,4 +30,9 @@ export default {
   CaseAggressorBehaviorPostCase: { enum: allCaseAggressorBehaviorsPostCase },
   CaseAggressorSecurityForce: { enum: allCaseAggressorSecurityForces },
   Case: caseSchema,
+  CaseListItem: caseListItemSchema,
+  FeedItem: feedItemSchema,
+  UserProfile: userProfileSchema,
+  CaseListPage: paginatedEnvelope({ $ref: "#/components/schemas/CaseListItem" }),
+  FeedItemListPage: paginatedEnvelope({ $ref: "#/components/schemas/FeedItem" }),
 };

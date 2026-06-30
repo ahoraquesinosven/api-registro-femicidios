@@ -9,6 +9,7 @@ const router = new OpenApiRouter({
 router.operation({
   method: "get", relativePath: "/me", spec: {
     tags: ["auth"],
+    operationId: "getCurrentUserProfile",
     summary: "Retrieves the current user profile",
     security: [securitySchemes.oauth],
     responses: {
@@ -16,17 +17,11 @@ router.operation({
         description: "Current user profile retrieved successfully",
         content: {
           "application/json": {
-            schema: {
-              type: "object",
-              properties: {
-                name: {type: "string"},
-                pictureUrl: {type: "string"},
-              },
-              required: ["name", "pictureUrl"],
-            },
+            schema: { $ref: "#/components/schemas/UserProfile" },
           },
         },
       },
+      "401": { $ref: "#/components/responses/UnauthorizedResponse" },
     },
   },
   handlers: [async (ctx) => {

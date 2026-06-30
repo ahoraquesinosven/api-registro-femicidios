@@ -34,9 +34,6 @@ CMD ["npm", "run", "start:dev"]
 # Setup development dependencies
 RUN npm --unsafe-perm install --only development --loglevel verbose
 
-# Setup test code
-COPY spec /opt/project/spec
-
 ################################################################################
 # Productive environment
 ################################################################################
