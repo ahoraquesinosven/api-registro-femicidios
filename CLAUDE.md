@@ -89,21 +89,20 @@ separate step added at that time.
 
 `node_modules` is **not** in the repo or the bind mount — it's installed into the
 image at build time and surfaced to the running containers via the `node_modules`
-named volume (so the bind-mounted project root doesn't shadow it). Consequences:
+named volume (so the bind-mounted project root doesn't shadow it). The dev image
+chowns `node_modules` and npm's home to `HOST_UID`/`HOST_GID` (passed as build
+args), so dependency commands run as your user without root:
 
-- Adding/upgrading a dependency: resolve it through npm so the version + lockfile
-  are pinned (don't hand-edit `package.json`). Because the image's `node_modules`
-  is root-owned, do it as root and chown the manifests back, then rebuild and
-  recreate the volume:
-  ```bash
-  docker compose run --rm --user 0:0 --entrypoint /bin/bash dev -c \
-    "npm i --save-dev <pkg> --package-lock-only && chown $HOST_UID:$HOST_GID package.json package-lock.json"
-  docker compose build dev      # bake the new dep into the image
-  docker compose down -v        # recreate node_modules volume from the rebuilt image
-  ```
-- After any dependency change, the `docker compose down -v` step is required —
-  otherwise the existing `node_modules` volume stays stale and won't contain the
-  new package.
+```bash
+docker compose run --rm dev npm i <pkg>            # or: npm i --save-dev <pkg>
+docker compose run --rm dev npm uninstall <pkg>
+```
+
+This installs straight into the live `node_modules` volume and updates the
+host-mounted `package.json`/`package-lock.json` — no rebuild needed for the dep
+to be usable in the running dev container. The next `docker compose build dev`
+(e.g. on a fresh clone, or what CI/Cloud Build do from `package-lock.json`) bakes
+it into the image, and a new volume seeds from there.
 
 ### Database
 

@@ -4,6 +4,9 @@ x-base-service-config: &base-service-config
   build:
     context: .
     target: development
+    args:
+      HOST_UID: ${HOST_UID}
+      HOST_GID: ${HOST_GID}
   develop:
     watch:
       - path: package.json
