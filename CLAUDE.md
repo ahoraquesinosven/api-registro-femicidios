@@ -87,22 +87,26 @@ separate step added at that time.
 
 ### Dependencies
 
-`node_modules` is **not** in the repo or the bind mount — it's installed into the
-image at build time and surfaced to the running containers via the `node_modules`
-named volume (so the bind-mounted project root doesn't shadow it). The dev image
-chowns `node_modules` and npm's home to `HOST_UID`/`HOST_GID` (passed as build
-args), so dependency commands run as your user without root:
+`node_modules` is **not** in the repo and **not** bind-mounted — it's installed
+into the image at build time. Source and config files are mounted individually
+(see the `volumes:` list in `compose.yml`) precisely so the bind mount never
+shadows the image's `node_modules`. This keeps deps fully in the image:
+`docker compose build` always reflects `package-lock.json`, with no volume to
+drift out of sync.
+
+To add/upgrade a dependency, resolve it through npm (don't hand-edit
+`package.json`), then rebuild to bake it in:
 
 ```bash
-docker compose run --rm dev npm i <pkg>            # or: npm i --save-dev <pkg>
-docker compose run --rm dev npm uninstall <pkg>
+docker compose run --rm dev npm i <pkg>     # or: npm i --save-dev <pkg>
+docker compose build dev
 ```
 
-This installs straight into the live `node_modules` volume and updates the
-host-mounted `package.json`/`package-lock.json` — no rebuild needed for the dep
-to be usable in the running dev container. The next `docker compose build dev`
-(e.g. on a fresh clone, or what CI/Cloud Build do from `package-lock.json`) bakes
-it into the image, and a new volume seeds from there.
+The dev image chowns `node_modules` and npm's home to `HOST_UID`/`HOST_GID`
+(passed as build args), so `npm i` runs as your user without root: it resolves
+the dep and updates the host-mounted `package.json`/`package-lock.json` (the
+in-container install itself is throwaway — `docker compose build dev` re-installs
+from the updated lockfile and bakes it into the image, same as CI/Cloud Build).
 
 ### Database
 

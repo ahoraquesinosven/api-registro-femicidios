@@ -12,12 +12,19 @@ x-base-service-config: &base-service-config
       - path: package.json
         action: rebuild
   volumes:
-    # Mount the whole project so any source/config file is live-editable, and
-    # mask node_modules with a named volume so the host (which has none) doesn't
-    # shadow the copy baked into the image. After changing dependencies, run
-    # `docker compose down -v` so this volume repopulates from the rebuilt image.
-    - '.:/opt/project'
-    - 'node_modules:/opt/project/node_modules'
+    # Mount source and config files individually (not the whole project), so the
+    # node_modules baked into the image is never shadowed by the host. Deps stay
+    # purely in the image: `docker compose build` always reflects the lockfile,
+    # with no volume to drift out of sync. Add a line here when a new top-level
+    # source/config file needs to be live-editable in the container.
+    - './knexfile.mjs:/opt/project/knexfile.mjs'
+    - './package.json:/opt/project/package.json'
+    - './package-lock.json:/opt/project/package-lock.json'
+    - './biome.json:/opt/project/biome.json'
+    - './redocly.yaml:/opt/project/redocly.yaml'
+    - './src:/opt/project/src'
+    - './migrations:/opt/project/migrations'
+    - './test:/opt/project/test'
   env_file:
     - .env.defaults
     - .env
@@ -98,4 +105,3 @@ services:
 
 volumes:
   pgdata:
-  node_modules:

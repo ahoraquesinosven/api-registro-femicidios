@@ -41,9 +41,10 @@ ENV HOME=/home/node
 CMD ["npm", "run", "start:dev"]
 
 # Setup development dependencies, then give node_modules and npm's home to the
-# dev user. Done in one layer so node_modules isn't duplicated by the chown.
-# The node_modules named volume is seeded from this image, so it inherits the
-# ownership too.
+# dev user (done in one layer so node_modules isn't duplicated by the chown).
+# node_modules is baked into the image and not mounted, so this lets
+# `docker compose run dev npm i ...` resolve deps and write the lockfile as the
+# dev user without root (the in-container install is throwaway; `build` bakes it).
 RUN npm --unsafe-perm install --only development --loglevel verbose \
   && chown -R ${HOST_UID}:${HOST_GID} /opt/project/node_modules /home/node
 
