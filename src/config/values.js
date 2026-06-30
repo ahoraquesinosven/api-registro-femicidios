@@ -1,7 +1,7 @@
-import assert from 'node:assert';
-import configDefinition from "./definition.js"
+import assert from "node:assert";
+import configDefinition from "./definition.js";
 
-const configEntryToValue = ({envKey, doc, defaultValue, required = true}) => {
+const configEntryToValue = ({ envKey, doc, defaultValue, required = true }) => {
   const value = process.env[envKey] || defaultValue;
 
   if (required) {

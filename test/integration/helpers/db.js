@@ -12,4 +12,4 @@ export async function closeDb() {
   await knex.destroy();
 }
 
-export {knex};
+export { knex };

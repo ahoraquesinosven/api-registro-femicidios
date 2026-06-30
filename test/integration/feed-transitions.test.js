@@ -1,21 +1,25 @@
-import {test} from "node:test";
 import assert from "node:assert/strict";
-
-import {api} from "./helpers/server.js";
-import {knex} from "./helpers/db.js";
-import {useTestHarness} from "./helpers/harness.js";
-import {seedTestUser, bearerFor} from "./helpers/auth.js";
-import {seedFeedItem} from "./helpers/feed.js";
+import { test } from "node:test";
+import { bearerFor, seedTestUser } from "./helpers/auth.js";
+import { knex } from "./helpers/db.js";
+import { seedFeedItem } from "./helpers/feed.js";
+import { useTestHarness } from "./helpers/harness.js";
+import { api } from "./helpers/server.js";
 
 // Feed item state transitions — these exercise the seeded-user identity path:
 // the handler assigns/completes using ctx.state.auth.id from the minted token.
 const ctx = useTestHarness();
 
 const transition = (id, verb, method, bearer = ctx.bearer) =>
-  api(`/v1/feed/items/${id}/${verb}`, {method, headers: {authorization: bearer}});
+  api(`/v1/feed/items/${id}/${verb}`, {
+    method,
+    headers: { authorization: bearer },
+  });
 
 const itemRow = async (id, ...columns) => {
-  const [row] = await knex("feedItems").where({id}).select(...columns);
+  const [row] = await knex("feedItems")
+    .where({ id })
+    .select(...columns);
   return row;
 };
 
@@ -30,7 +34,7 @@ test("POST assignment assigns the item to the current user", async () => {
 });
 
 test("DELETE assignment unassigns the item", async () => {
-  const id = await seedFeedItem({assignedUserId: null});
+  const id = await seedFeedItem({ assignedUserId: null });
   await transition(id, "assignment", "POST");
 
   const res = await transition(id, "assignment", "DELETE");
@@ -102,7 +106,10 @@ test("a user cannot complete another user's item", async () => {
   const id = await seedFeedItem();
   await transition(id, "assignment", "POST"); // assigned to ctx.user
 
-  const other = await seedTestUser({providerId: "other-user", email: "other@example.com"});
+  const other = await seedTestUser({
+    providerId: "other-user",
+    email: "other@example.com",
+  });
   const otherBearer = await bearerFor(other);
 
   const res = await transition(id, "completion", "POST", otherBearer);
@@ -114,6 +121,6 @@ test("a user cannot complete another user's item", async () => {
 
 test("transitions require auth", async () => {
   const id = await seedFeedItem();
-  const res = await api(`/v1/feed/items/${id}/assignment`, {method: "POST"});
+  const res = await api(`/v1/feed/items/${id}/assignment`, { method: "POST" });
   assert.equal(res.status, 401);
 });

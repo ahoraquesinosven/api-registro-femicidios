@@ -1,20 +1,20 @@
-import caseSchema from "../openapi/schemas/case.js"
-import caseListItemSchema from "../openapi/schemas/caseListItem.js"
-import feedItemSchema from "../openapi/schemas/feedItem.js"
-import userProfileSchema from "../openapi/schemas/userProfile.js"
-import { paginatedEnvelope } from "../openapi/schemas/pagination.js"
-import allGenders from "../data/genders.js";
-import allProvinces from "../data/provinces.js";
-import allCaseCategories from "../data/caseCategories.js";
-import allMomentOfDays from "../data/momentsOfDay.js";
-import allGeographicLocations from "../data/geographicLocations.js";
-import allCasePlaces from "../data/places.js";
-import allCaseMurderWeapons from "../data/murderWeapons.js";
-import allCaseJudicialMeasures from "../data/judicialMeasures.js";
-import allVictimBondAggressors from "../data/victimBondAggressor.js";
-import allNationalities from "../data/nationalities.js";
 import allCaseAggressorBehaviorsPostCase from "../data/behavioursPostCase.js";
+import allCaseCategories from "../data/caseCategories.js";
+import allGenders from "../data/genders.js";
+import allGeographicLocations from "../data/geographicLocations.js";
+import allCaseJudicialMeasures from "../data/judicialMeasures.js";
+import allMomentOfDays from "../data/momentsOfDay.js";
+import allCaseMurderWeapons from "../data/murderWeapons.js";
+import allNationalities from "../data/nationalities.js";
+import allCasePlaces from "../data/places.js";
+import allProvinces from "../data/provinces.js";
 import allCaseAggressorSecurityForces from "../data/securityForces.js";
+import allVictimBondAggressors from "../data/victimBondAggressor.js";
+import caseSchema from "../openapi/schemas/case.js";
+import caseListItemSchema from "../openapi/schemas/caseListItem.js";
+import feedItemSchema from "../openapi/schemas/feedItem.js";
+import { paginatedEnvelope } from "../openapi/schemas/pagination.js";
+import userProfileSchema from "../openapi/schemas/userProfile.js";
 
 export default {
   Gender: { enum: allGenders },
@@ -33,6 +33,10 @@ export default {
   CaseListItem: caseListItemSchema,
   FeedItem: feedItemSchema,
   UserProfile: userProfileSchema,
-  CaseListPage: paginatedEnvelope({ $ref: "#/components/schemas/CaseListItem" }),
-  FeedItemListPage: paginatedEnvelope({ $ref: "#/components/schemas/FeedItem" }),
+  CaseListPage: paginatedEnvelope({
+    $ref: "#/components/schemas/CaseListItem",
+  }),
+  FeedItemListPage: paginatedEnvelope({
+    $ref: "#/components/schemas/FeedItem",
+  }),
 };

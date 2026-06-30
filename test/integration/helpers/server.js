@@ -11,8 +11,8 @@ if (!baseUrl) {
 
 // Thin fetch wrapper: prefixes the base URL and JSON-encodes the body.
 // Returns the raw Response — tests call .status / await .json() themselves.
-export function api(path, {method = "GET", headers = {}, body} = {}) {
-  const opts = {method, headers: {...headers}};
+export function api(path, { method = "GET", headers = {}, body } = {}) {
+  const opts = { method, headers: { ...headers } };
   if (body !== undefined) {
     opts.headers["content-type"] = "application/json";
     opts.body = JSON.stringify(body);

@@ -1,7 +1,7 @@
 import config from "../config/values.js";
-import { securitySchemes } from "./securitySchemes.js";
-import schemas from "./schemas.js";
 import responses from "./responses.js";
+import schemas from "./schemas.js";
+import { securitySchemes } from "./securitySchemes.js";
 
 export const openApiDocument = {
   openapi: "3.1.0",
@@ -13,9 +13,7 @@ export const openApiDocument = {
       url: "https://opensource.org/licenses/MIT",
     },
   },
-  servers: [
-    {url: config.server.cannonicalOrigin},
-  ],
+  servers: [{ url: config.server.cannonicalOrigin }],
   components: {
     securitySchemes: {
       oauth: securitySchemes.oauth.component,

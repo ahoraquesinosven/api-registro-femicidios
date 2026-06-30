@@ -43,19 +43,19 @@ export default {
 
       redirectUri: entry({
         envKey: "AUTH_PROVIDER_REDIRECT_URI",
-        doc: "OAuth2.0 redirect URI for valid authorization request redirections."
+        doc: "OAuth2.0 redirect URI for valid authorization request redirections.",
       }),
 
       authCodeEncryptionSecret: entry({
         envKey: "AUTH_PROVIDER_CODE_ENCRYPTION_SECRET",
-        doc: "Encryption key for encrypting authorization codes."
+        doc: "Encryption key for encrypting authorization codes.",
       }),
     },
 
     internal: {
       key: entry({
         envKey: "AUTH_INTERNAL_KEY",
-        doc: "Base64-encoded user:password pair, as defined by RFC7617"
+        doc: "Base64-encoded user:password pair, as defined by RFC7617",
       }),
     },
   },

@@ -1,8 +1,15 @@
 export default {
   type: "object",
   required: [
-    "id", "feed", "publishedAt", "title", "link",
-    "contentSnippet", "isDone", "isIrrelevant", "assignedUser",
+    "id",
+    "feed",
+    "publishedAt",
+    "title",
+    "link",
+    "contentSnippet",
+    "isDone",
+    "isIrrelevant",
+    "assignedUser",
   ],
   properties: {
     id: { type: "integer" },

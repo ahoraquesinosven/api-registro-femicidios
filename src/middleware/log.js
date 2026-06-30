@@ -1,4 +1,4 @@
-import {logger} from "../services/logger.js";
+import { logger } from "../services/logger.js";
 
 const decideLogLevel = (status) => {
   if (status >= 500) {
@@ -6,7 +6,7 @@ const decideLogLevel = (status) => {
   }
 
   return "info";
-}
+};
 
 export function logRequest() {
   return async function logRequest(ctx, next) {
@@ -18,9 +18,9 @@ export function logRequest() {
         message: err.message,
         stack: err.stack,
       });
-        ctx.status = 500;
+      ctx.status = 500;
     } finally {
-      const durationMs = new Date() - start;
+      const durationMs = Date.now() - start;
 
       const httpRequest = {
         requestMethod: ctx.request.method,
@@ -33,12 +33,9 @@ export function logRequest() {
         latency: `${durationMs / 1000}s`,
       };
 
-      const message = `${httpRequest.status} ${httpRequest.latency} ${httpRequest.requestMethod} ${httpRequest.requestUrl}`
+      const message = `${httpRequest.status} ${httpRequest.latency} ${httpRequest.requestMethod} ${httpRequest.requestUrl}`;
 
-      logger.log(
-        decideLogLevel(ctx.response.status),
-        {httpRequest, message},
-      );
+      logger.log(decideLogLevel(ctx.response.status), { httpRequest, message });
     }
   };
 }

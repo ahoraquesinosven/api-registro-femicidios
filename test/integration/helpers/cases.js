@@ -1,5 +1,5 @@
-import {api} from "./server.js";
-import {INTERNAL_KEY} from "./auth.js";
+import { INTERNAL_KEY } from "./auth.js";
+import { api } from "./server.js";
 
 // Minimal valid Case request body. Required by the schema: occurredAt, province,
 // place, newsLinks, victim, aggressor, caseCategory. victim/aggressor sub-fields
@@ -10,8 +10,8 @@ export const caseBody = (overrides = {}) => ({
   place: "VIVIENDA_DE_LA_VICTIMA",
   caseCategory: "FEMICIDIO_DIRECTO",
   newsLinks: ["https://example.com/n1"],
-  victim: {fullName: "Victima Uno"},
-  aggressor: {fullName: "Agresor Uno"},
+  victim: { fullName: "Victima Uno" },
+  aggressor: { fullName: "Agresor Uno" },
   ...overrides,
 });
 
@@ -20,6 +20,6 @@ export const caseBody = (overrides = {}) => ({
 export const createCase = (overrides) =>
   api("/v1/cases", {
     method: "POST",
-    headers: {authorization: INTERNAL_KEY},
+    headers: { authorization: INTERNAL_KEY },
     body: caseBody(overrides),
   });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import config from '../config/definition.js';
+import config from "../config/definition.js";
 
 // Emit one tab-separated `KEY<TAB>doc` line per config entry with no usable
 // value (unset/empty in the environment and without a default). Meant to be

@@ -1,4 +1,4 @@
-import {knex} from "./db.js";
+import { knex } from "./db.js";
 
 // Inserts a single feed item directly (bypasses the RSS ingestion path). Pass
 // overrides to set status-relevant columns (assignedUserId, isDone, isIrrelevant).
@@ -25,7 +25,7 @@ export const seedFeedItem = async (overrides = {}) => {
 // feedItemKey/link are unique per row to satisfy the table's conflict handling.
 export const seedFeedItems = (count, overrides = {}) =>
   Promise.all(
-    Array.from({length: count}, (_, i) =>
+    Array.from({ length: count }, (_, i) =>
       seedFeedItem({
         feedItemKey: `item-${i + 1}`,
         link: `https://news.example/article-${i + 1}`,

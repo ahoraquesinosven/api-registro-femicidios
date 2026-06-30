@@ -1,10 +1,10 @@
-import config from './src/config/values.js';
+import config from "./src/config/values.js";
 
 export default {
-  client: 'pg',
+  client: "pg",
   connection: config.db.connectionString,
   migrations: {
-    loadExtensions: ['.mjs'],
-    directory: './migrations'
+    loadExtensions: [".mjs"],
+    directory: "./migrations",
   },
 };

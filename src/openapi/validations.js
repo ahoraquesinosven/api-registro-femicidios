@@ -1,7 +1,7 @@
-import Ajv2019 from "ajv/dist/2019.js"
-import addFormats from 'ajv-formats';
-import localize from 'ajv-i18n';
-import schemas from './schemas.js';
+import Ajv2019 from "ajv/dist/2019.js";
+import addFormats from "ajv-formats";
+import localize from "ajv-i18n";
+import schemas from "./schemas.js";
 
 const ajv = new Ajv2019({
   coerceTypes: true,
@@ -11,10 +11,10 @@ const ajv = new Ajv2019({
 addFormats(ajv);
 
 function validateWithOpenAPISchema(data, schema) {
-  const jsonSchema = {...schema, components: { schemas }};
+  const jsonSchema = { ...schema, components: { schemas } };
   if (!ajv.validate(jsonSchema, data)) {
     localize.es(ajv.errors);
-    return { valid: false, errors: ajv.errors }
+    return { valid: false, errors: ajv.errors };
   }
 
   return { valid: true };
@@ -37,15 +37,20 @@ const validateParameter = (ctx, paramSpec) => {
   const paramValue = getParameterValue(ctx, paramSpec);
 
   if (paramSpec.required && !paramValue) {
-    return [{
-      type: "parameter",
-      path: paramSpec.name,
-      message: `is required`,
-    }];
+    return [
+      {
+        type: "parameter",
+        path: paramSpec.name,
+        message: `is required`,
+      },
+    ];
   }
 
   if (paramValue) {
-    const { valid, errors } = validateWithOpenAPISchema(paramValue, paramSpec.schema)
+    const { valid, errors } = validateWithOpenAPISchema(
+      paramValue,
+      paramSpec.schema,
+    );
     if (!valid) {
       return errors.map((error) => ({
         type: "parameter",
@@ -66,21 +71,28 @@ const validateBody = (request, bodySpec) => {
 
   const mediaTypeSpec = bodySpec.content[request.type];
   if (!mediaTypeSpec) {
-    return [{
-      type: "body",
-      message: `Request content-type ${request.type} is not supported`,
-    }];
+    return [
+      {
+        type: "body",
+        message: `Request content-type ${request.type} is not supported`,
+      },
+    ];
   }
 
   if (bodySpec.required && !request.body) {
-    return [{
-      type: "body",
-      message: "is required",
-    }];
+    return [
+      {
+        type: "body",
+        message: "is required",
+      },
+    ];
   }
 
   if (request.body) {
-    const { valid, errors } = validateWithOpenAPISchema(request.body, mediaTypeSpec.schema);
+    const { valid, errors } = validateWithOpenAPISchema(
+      request.body,
+      mediaTypeSpec.schema,
+    );
     if (!valid) {
       return errors.map((error) => ({
         type: "body",
@@ -97,9 +109,9 @@ const validateBody = (request, bodySpec) => {
 export function requestValidationMiddleware(operationSpec) {
   return (ctx, next) => {
     const parametersSpec = operationSpec.parameters || [];
-    const parametersErrors = parametersSpec.flatMap(
-    (paramSpec) => validateParameter(ctx, paramSpec)
-  );
+    const parametersErrors = parametersSpec.flatMap((paramSpec) =>
+      validateParameter(ctx, paramSpec),
+    );
 
     const bodySpec = operationSpec.requestBody;
     const bodyErrors = validateBody(ctx.request, bodySpec);
@@ -113,5 +125,5 @@ export function requestValidationMiddleware(operationSpec) {
     }
 
     return next();
-  }
+  };
 }
