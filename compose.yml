@@ -9,12 +9,12 @@ x-base-service-config: &base-service-config
       - path: package.json
         action: rebuild
   volumes:
-    - './knexfile.mjs:/opt/project/knexfile.mjs'
-    - './package.json:/opt/project/package.json'
-    - './redocly.yaml:/opt/project/redocly.yaml'
-    - './src:/opt/project/src'
-    - './migrations:/opt/project/migrations'
-    - './test:/opt/project/test'
+    # Mount the whole project so any source/config file is live-editable, and
+    # mask node_modules with a named volume so the host (which has none) doesn't
+    # shadow the copy baked into the image. After changing dependencies, run
+    # `docker compose down -v` so this volume repopulates from the rebuilt image.
+    - '.:/opt/project'
+    - 'node_modules:/opt/project/node_modules'
   env_file:
     - .env.defaults
     - .env
@@ -95,3 +95,4 @@ services:
 
 volumes:
   pgdata:
+  node_modules:
