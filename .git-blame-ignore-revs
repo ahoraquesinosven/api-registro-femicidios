@@ -1,0 +1,6 @@
+# Revisions to skip in `git blame` (bulk, mechanical changes only).
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: apply Biome formatting and lint fixes across the codebase
+ee23f78785a85e3bac1337125bb81c94ba8425a0
