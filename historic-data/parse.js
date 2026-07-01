@@ -9,6 +9,12 @@ export function parseInteger(value) {
     return isNaN(parsed) ? undefined : parsed;
 }
 
+export function parseDecimal(value) {
+    if (!value || value.trim() === "") return undefined;
+    const parsed = parseFloat(value.trim().replace(",", "."));
+    return isNaN(parsed) ? undefined : parsed;
+}
+
 export function parseOptionalString(value) {
     if (!value || value.trim() === "") return undefined;
     return value.trim();

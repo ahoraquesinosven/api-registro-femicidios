@@ -122,7 +122,7 @@ function buildVictim(row) {
     const fullName = p.parseOptionalString(row.victimFullName);
     if (fullName !== undefined) victim.fullName = fullName;
 
-    const age = p.parseInteger(row.victimAge);
+    const age = p.parseDecimal(row.victimAge);
     if (age !== undefined) victim.age = age;
 
     const gender = p.parseGender(row.victimGender);
