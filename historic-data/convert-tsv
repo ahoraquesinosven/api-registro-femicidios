@@ -245,10 +245,19 @@ function buildCase(row) {
     if (isRape !== undefined) caseObj.isRape = isRape;
 
     const organizedCrimeNotes = p.parseOptionalString(row.organizedCrimeNotes);
-    if (organizedCrimeNotes !== undefined) caseObj.organizedCrimeNotes = organizedCrimeNotes;
+    const isRelatedToOrganizedCrimeBoolean = p.parseBoolean(row.isRelatedToOrganizedCrime);
 
-    const isRelatedToOrganizedCrime = p.parseBoolean(row.isRelatedToOrganizedCrime) || Boolean(organizedCrimeNotes);
-    if (isRelatedToOrganizedCrime !== undefined) caseObj.isRelatedToOrganizedCrime = isRelatedToOrganizedCrime;
+    if (organizedCrimeNotes !== undefined) {
+        caseObj.organizedCrimeNotes = organizedCrimeNotes;
+        caseObj.isRelatedToOrganizedCrime = true;
+    } else if (isRelatedToOrganizedCrimeBoolean === true) {
+        caseObj.organizedCrimeNotes = "Pending notes";
+        caseObj.isRelatedToOrganizedCrime = true;
+    } else if (isRelatedToOrganizedCrimeBoolean === false) {
+        caseObj.isRelatedToOrganizedCrime = false;
+    } else {
+        caseObj.isRelatedToOrganizedCrime = null;
+    }
 
     const generalNotes = p.parseOptionalString(row.generalNotes);
     if (generalNotes !== undefined) caseObj.generalNotes = generalNotes;
