@@ -130,6 +130,7 @@ function buildVictim(row) {
 
     const nationality = p.parseNationality(row.victimNationality);
     if (nationality !== undefined) victim.nationality = nationality;
+    if (nationality.toLowerCase() === "sin datos") victim.nationality = undefined;
 
     const isSexualWorker = p.parseBoolean(row.victimIsSexualWorker);
     if (isSexualWorker !== undefined) victim.isSexualWorker = isSexualWorker;
@@ -159,6 +160,7 @@ function buildVictim(row) {
 
     const hasChildren = p.parseBoolean(row.hasChildren) || numberOfChildren > 0 || ageOfChildren.length > 0;
     if (hasChildren !== undefined) victim.hasChildren = hasChildren;
+ 
 
     return victim;
 }
@@ -220,8 +222,12 @@ function buildCase(row) {
     const caseCategory = p.parseCaseCategory(row.caseCategory);
     if (caseCategory !== undefined) caseObj.caseCategory = caseCategory;
 
-    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("intento de")) caseObj.wasItAnAttempt = true;
-    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("se investiga")) caseObj.isInsufficientDataOrUnderInvestigation = true;
+    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("intento de")) caseObj.wasItAnAttempt = true
+    else caseObj.wasItAnAttempt = false;
+    
+    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("se investiga")) caseObj.isInsufficientDataOrUnderInvestigation = true
+    else caseObj.isInsufficientDataOrUnderInvestigation = false;
+
 
     const wasJudicialized = p.parseBoolean(row.wasJudicialized);
     if (wasJudicialized !== undefined) caseObj.wasJudicialized = wasJudicialized;

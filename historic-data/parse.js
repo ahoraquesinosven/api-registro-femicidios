@@ -135,6 +135,8 @@ export function parseCaseCategory(value) {
         "Intento de Travesticidio/Transfemicidio": "TRAVESTICIDIO",
         "Crímenes de Odio": "CRIMEN_DE_ODIO",
         "Instigación al suicidio": "INSTIGACION_AL_SUICIDIO",
+        "Intento de Transfemicidio": "TRANSFEMICIDIO",
+        "Travesticidio": "TRAVESTICIDIO",
     };
     const trimmedValue = value && value.trim();
     if (!trimmedValue || trimmedValue === "" || trimmedValue.toLowerCase() === "sin datos") return undefined;
