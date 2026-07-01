@@ -1,5 +1,5 @@
-import {upsertUser} from "../../../src/data/user.js";
-import {tokenRequest} from "../../../src/lib/oauth.js";
+import { upsertUser } from "../../../src/data/user.js";
+import { tokenRequest } from "../../../src/lib/oauth.js";
 
 // Internal (server-to-server) auth: the raw key is sent as the Authorization
 // header value (see checkServerAuth). Used by POST /cases.

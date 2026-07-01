@@ -1,19 +1,21 @@
 import Router from "@koa/router";
-import config from '../config/values.js';
-import {buildAuthorizationURL, exchangeAuthorizationCode, verifyGoogleTokenValues} from '../services/google/openid.js';
-import {createPKCEPair, createXSRFToken} from "../lib/crypto.js";
-import {authorizationRequest, tokenRequest} from "../lib/oauth.js";
+import config from "../config/values.js";
 import { upsertUser } from "../data/user.js";
+import { createPKCEPair, createXSRFToken } from "../lib/crypto.js";
+import { authorizationRequest, tokenRequest } from "../lib/oauth.js";
+import {
+  buildAuthorizationURL,
+  exchangeAuthorizationCode,
+  verifyGoogleTokenValues,
+} from "../services/google/openid.js";
 import { logger } from "../services/logger.js";
 
 const router = new Router({
   prefix: "/auth",
 });
 
-const absoluteURL = (routeName) => new URL(
-  router.url(routeName),
-  config.server.cannonicalOrigin,
-);
+const absoluteURL = (routeName) =>
+  new URL(router.url(routeName), config.server.cannonicalOrigin);
 
 router.get("/pkce", async (ctx) => {
   ctx.body = createPKCEPair();
@@ -26,14 +28,14 @@ router.get("authorize", "/authorize", async (ctx) => {
       const responseUrl = authorizationRequest.errorResponse(
         config.auth.provider.redirectUri,
         validationError,
-        ctx.request.query.state
+        ctx.request.query.state,
       );
       ctx.redirect(responseUrl);
       return;
     } else {
-      const {error, error_description} = validationError;
+      const { error, error_description } = validationError;
       ctx.status = 422;
-      ctx.body = {error, error_description};
+      ctx.body = { error, error_description };
       return;
     }
   }
@@ -61,7 +63,11 @@ router.get("google", "/cb/google", async (ctx) => {
   const state = new URLSearchParams(ctx.request.query.state);
   const storedXSRFToken = ctx.cookies.get("xsrf-token");
   const receivedXSRFToken = state.get("xsrf");
-  if (!storedXSRFToken || !receivedXSRFToken || storedXSRFToken !== receivedXSRFToken) {
+  if (
+    !storedXSRFToken ||
+    !receivedXSRFToken ||
+    storedXSRFToken !== receivedXSRFToken
+  ) {
     logger.warn("invalid XSRFtoken");
     ctx.status = 422;
     return;
@@ -79,13 +85,15 @@ router.get("google", "/cb/google", async (ctx) => {
   const responseUrl = authorizationRequest.successResponse(
     config.auth.provider.redirectUri,
     code,
-    originalState
+    originalState,
   );
   ctx.response.redirect(responseUrl);
 });
 
 router.post("token", "/token", async (ctx) => {
-  const {validationError, codePayload} = await tokenRequest.verify(ctx.request);
+  const { validationError, codePayload } = await tokenRequest.verify(
+    ctx.request,
+  );
   if (validationError) {
     ctx.status = 422;
     ctx.body = validationError;
@@ -120,7 +128,7 @@ router.post("token", "/token", async (ctx) => {
   ctx.status = 200;
   ctx.body = {
     access_token: token,
-    token_type: 'Bearer',
+    token_type: "Bearer",
     expires_in: 24 * 60 * 60,
     scope: "",
   };

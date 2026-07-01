@@ -112,6 +112,9 @@ coverage
 ############################
 # Others
 ############################
-.vscode
+# Ignore personal editor state, but share the agreed workspace settings.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 historic-data/*.tsv
 historic-data/*.json

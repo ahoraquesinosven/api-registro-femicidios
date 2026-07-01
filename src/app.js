@@ -1,10 +1,10 @@
-import Koa from "koa";
-import routers from "./routers/index.js";
+import { bodyParser } from "@koa/bodyparser";
 import cors from "@koa/cors";
-import {bodyParser} from "@koa/bodyparser";
-import {logRequest} from "./middleware/log.js";
-import {handleCursorErrors} from "./middleware/cursorError.js";
-import {logger} from "./services/logger.js";
+import Koa from "koa";
+import { handleCursorErrors } from "./middleware/cursorError.js";
+import { logRequest } from "./middleware/log.js";
+import routers from "./routers/index.js";
+import { logger } from "./services/logger.js";
 
 const app = new Koa();
 

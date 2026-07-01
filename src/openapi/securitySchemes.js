@@ -1,4 +1,8 @@
-import {checkUserAuth, checkServerAuth, requireAuth} from "../middleware/auth.js";
+import {
+  checkServerAuth,
+  checkUserAuth,
+  requireAuth,
+} from "../middleware/auth.js";
 
 export const securitySchemes = {
   oauth: {
@@ -13,7 +17,7 @@ export const securitySchemes = {
         },
       },
     },
-    securityRequirement: {"oauth": []},
+    securityRequirement: { oauth: [] },
     requestValidator: checkUserAuth,
   },
 
@@ -24,18 +28,17 @@ export const securitySchemes = {
       name: "authorization",
       in: "header",
     },
-    securityRequirement: {"internal": []},
+    securityRequirement: { internal: [] },
     requestValidator: checkServerAuth,
   },
 };
-
 
 export function securityMiddleware(operationSpec) {
   if (!operationSpec.security) {
     return [];
   }
 
-  const checkers = operationSpec.security.map(spec => spec.requestValidator);
+  const checkers = operationSpec.security.map((spec) => spec.requestValidator);
   return [requireAuth(checkers)];
 }
 
@@ -45,6 +48,6 @@ export function openApiSecurityRequirement(operationSpec) {
   }
 
   return {
-    security: operationSpec.security.map(spec => spec.securityRequirement),
+    security: operationSpec.security.map((spec) => spec.securityRequirement),
   };
 }

@@ -23,7 +23,13 @@ docker compose run dev knex migrate:latest
 # Create a new migration
 docker compose run dev knex migrate:make <name> --migrations-directory ./migrations --migrations-stub-extension .mjs
 
-# Run a one-off command (lint, scripts, etc.)
+# Lint + check formatting (non-mutating; this is what CI runs)
+docker compose run --rm dev npm run lint
+
+# Auto-format and apply safe lint fixes across the project
+docker compose run --rm dev npm run format
+
+# Run a one-off command (scripts, etc.)
 docker compose run --rm --entrypoint /bin/bash dev -c "<cmd>"
 
 # Run the integration test suite end-to-end (test db + server + runner)
@@ -56,7 +62,51 @@ Conventions the linter enforces, worth honoring when adding routes:
 - Every operation needs a unique `operationId` and at least one `4xx` response.
 - Secured operations document `401` via `{ $ref: "#/components/responses/UnauthorizedResponse" }`.
 - Prefer registering request/response body schemas globally in `src/openapi/schemas.js` and `$ref`-ing them, over inline schemas — paginated list endpoints reuse the `paginatedEnvelope()` factory in `src/openapi/schemas/pagination.js`.
-- `@redocly/cli` is a devDependency, so changing `package.json` deps requires a `docker compose build dev` to bake them into the image.
+- `@redocly/cli` is a devDependency (see Dependencies below for how deps are added/rebuilt).
+
+### Linting and formatting
+
+[Biome](https://biomejs.dev) handles both formatting and linting (one tool, one
+config — `biome.json`). It already parses/formats/lints `.ts`, so it's ready for
+the planned TypeScript migration; actual type-checking (`tsc --noEmit`) will be a
+separate step added at that time.
+
+- `npm run lint` → `biome check .` — non-mutating; verifies **both** formatting
+  and lint rules. This is the gate run in CI, so formatting drift fails the build.
+- `npm run format` → `biome check --write .` — reformats and applies safe lint
+  fixes across `src/`, `test/`, `migrations/`, and `knexfile.mjs` (scoped via
+  `files.includes` in `biome.json`).
+- CI runs on **GitHub Actions** (`.github/workflows/ci.yml`) for PRs into `dev`/
+  `main`; Cloud Build (`cloudbuild.yaml`) remains deploy-only. Branch protection
+  requiring the `lint` check is configured in GitHub settings, not in-repo.
+- Editor integration: `.editorconfig` (kept in sync with `biome.json`) plus
+  checked-in `.vscode/` settings recommending the Biome extension. nvim users
+  point at the Biome LSP (`nvim-lspconfig`'s `biome`) or `conform.nvim`'s `biome`
+  formatter; the Biome binary must be available on the host (standalone binary or
+  the VS Code extension's bundled copy) since editors run it outside Docker.
+
+### Dependencies
+
+`node_modules` is **not** in the repo and **not** bind-mounted — it's installed
+into the image at build time. Source and config files are mounted individually
+(see the `volumes:` list in `compose.yml`) precisely so the bind mount never
+shadows the image's `node_modules`. This keeps deps fully in the image:
+`docker compose build` always reflects `package-lock.json`, with no volume to
+drift out of sync.
+
+To add/upgrade a dependency, resolve it through npm (don't hand-edit
+`package.json`), then rebuild to bake it in:
+
+```bash
+docker compose run --rm dev npm i <pkg>     # or: npm i --save-dev <pkg>
+docker compose build dev
+```
+
+The dev image chowns `node_modules` and npm's home to `HOST_UID`/`HOST_GID`
+(passed as build args), so `npm i` runs as your user without root: it resolves
+the dep and updates the host-mounted `package.json`/`package-lock.json` (the
+in-container install itself is throwaway — `docker compose build dev` re-installs
+from the updated lockfile and bakes it into the image, same as CI/Cloud Build).
 
 ### Database
 

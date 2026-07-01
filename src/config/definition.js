@@ -22,14 +22,18 @@ export default {
 
   auth: {
     google: {
+      // Not in .env.defaults (real secrets, prompted into .env locally) and not
+      // exercised by CI's OpenAPI validation, so they may be absent in CI.
       clientId: entry({
         envKey: "AUTH_GOOGLE_CLIENT_ID",
         doc: "Google OpenID Client Id. See https://developers.google.com/identity/openid-connect/openid-connect#getcredentials",
+        optionalInCi: true,
       }),
 
       clientSecret: entry({
         envKey: "AUTH_GOOGLE_CLIENT_SECRET",
         doc: "Google OpenID Client Secret. See https://developers.google.com/identity/openid-connect/openid-connect#getcredentials",
+        optionalInCi: true,
       }),
     },
 
@@ -43,19 +47,19 @@ export default {
 
       redirectUri: entry({
         envKey: "AUTH_PROVIDER_REDIRECT_URI",
-        doc: "OAuth2.0 redirect URI for valid authorization request redirections."
+        doc: "OAuth2.0 redirect URI for valid authorization request redirections.",
       }),
 
       authCodeEncryptionSecret: entry({
         envKey: "AUTH_PROVIDER_CODE_ENCRYPTION_SECRET",
-        doc: "Encryption key for encrypting authorization codes."
+        doc: "Encryption key for encrypting authorization codes.",
       }),
     },
 
     internal: {
       key: entry({
         envKey: "AUTH_INTERNAL_KEY",
-        doc: "Base64-encoded user:password pair, as defined by RFC7617"
+        doc: "Base64-encoded user:password pair, as defined by RFC7617",
       }),
     },
   },

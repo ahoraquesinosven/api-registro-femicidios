@@ -1,22 +1,21 @@
-import {test} from "node:test";
 import assert from "node:assert/strict";
-
-import {api} from "./helpers/server.js";
-import {useTestHarness} from "./helpers/harness.js";
-import {caseBody} from "./helpers/cases.js";
-import {INTERNAL_KEY} from "./helpers/auth.js";
+import { test } from "node:test";
+import { INTERNAL_KEY } from "./helpers/auth.js";
+import { caseBody } from "./helpers/cases.js";
+import { useTestHarness } from "./helpers/harness.js";
+import { api } from "./helpers/server.js";
 
 // POST /v1/cases cross-field validation matrix (caseValidations in
 // src/routers/cases.js) plus JSON-schema-level failures. Bodies are crafted to
 // be schema-valid except for the one cross-field rule under test, so the
 // request reaches the handler and returns the custom 422 error array
 // (each entry is {type, path, message}).
-const ctx = useTestHarness();
+const _ctx = useTestHarness();
 
 const post = (overrides) =>
   api("/v1/cases", {
     method: "POST",
-    headers: {authorization: INTERNAL_KEY},
+    headers: { authorization: INTERNAL_KEY },
     body: caseBody(overrides),
   });
 
@@ -34,31 +33,38 @@ const assertRejectsWith = async (overrides, path) => {
 
 test("organizedCrimeNotes without isRelatedToOrganizedCrime", () =>
   assertRejectsWith(
-    {organizedCrimeNotes: "algo", isRelatedToOrganizedCrime: false},
+    { organizedCrimeNotes: "algo", isRelatedToOrganizedCrime: false },
     "/isRelatedToOrganizedCrime",
   ));
 
 test("isRelatedToOrganizedCrime without notes", () =>
   assertRejectsWith(
-    {isRelatedToOrganizedCrime: true},
+    { isRelatedToOrganizedCrime: true },
     "/organizedCrimeNotes",
   ));
 
 test("numberOfChildren lower than ageOfChildren length", () =>
   assertRejectsWith(
-    {victim: {fullName: "V", hasChildren: true, numberOfChildren: 1, ageOfChildren: [5, 6]}},
+    {
+      victim: {
+        fullName: "V",
+        hasChildren: true,
+        numberOfChildren: 1,
+        ageOfChildren: [5, 6],
+      },
+    },
     "/victim.numberOfChildren",
   ));
 
 test("totalLegalComplaints without hadLegalComplaints", () =>
   assertRejectsWith(
-    {totalLegalComplaints: 2, hadLegalComplaints: false},
+    { totalLegalComplaints: 2, hadLegalComplaints: false },
     "/hadLegalComplaints",
   ));
 
 test("wasJudicialized without hadLegalComplaints", () =>
   assertRejectsWith(
-    {wasJudicialized: true, hadLegalComplaints: false},
+    { wasJudicialized: true, hadLegalComplaints: false },
     "/hadLegalComplaints",
   ));
 
@@ -74,31 +80,37 @@ test("judicialMeasures without wasJudicialized", () =>
 
 test("hasMediaGenderPerspective without coverage notes", () =>
   assertRejectsWith(
-    {hasMediaGenderPerspective: true},
+    { hasMediaGenderPerspective: true },
     "/coverageMediaPerspectiveNotes",
   ));
 
 test("coverage notes without hasMediaGenderPerspective", () =>
   assertRejectsWith(
-    {coverageMediaPerspectiveNotes: "una nota"},
+    { coverageMediaPerspectiveNotes: "una nota" },
     "/hasMediaGenderPerspective",
   ));
 
 test("victim.numberOfChildren without hasChildren", () =>
   assertRejectsWith(
-    {victim: {fullName: "V", numberOfChildren: 2}},
+    { victim: { fullName: "V", numberOfChildren: 2 } },
     "/victim.hasChildren",
   ));
 
 test("victim.ageOfChildren without hasChildren", () =>
   assertRejectsWith(
-    {victim: {fullName: "V", ageOfChildren: [5]}},
+    { victim: { fullName: "V", ageOfChildren: [5] } },
     "/victim.hasChildren",
   ));
 
 test("aggressor.securityForce without belongsSecurityForce", () =>
   assertRejectsWith(
-    {aggressor: {fullName: "A", securityForce: "POLICIA", belongsSecurityForce: false}},
+    {
+      aggressor: {
+        fullName: "A",
+        securityForce: "POLICIA",
+        belongsSecurityForce: false,
+      },
+    },
     "/aggressor.belongsSecurityForce",
   ));
 
@@ -107,14 +119,14 @@ test("missing required field is rejected by the schema", async () => {
   delete body.occurredAt;
   const res = await api("/v1/cases", {
     method: "POST",
-    headers: {authorization: INTERNAL_KEY},
+    headers: { authorization: INTERNAL_KEY },
     body,
   });
   assert.equal(res.status, 422);
 });
 
 test("invalid enum value is rejected by the schema", async () => {
-  const res = await post({province: "NOWHERE"});
+  const res = await post({ province: "NOWHERE" });
   assert.equal(res.status, 422);
 });
 

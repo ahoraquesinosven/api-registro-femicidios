@@ -69,21 +69,23 @@ export function keysetPaginator(keys) {
         value: values[i],
       }));
 
-      return query.where((outerBuilder) =>
-        terms.reduce(
-          ({ builder, priorTerms }, term) => ({
-            builder: builder.orWhere((clause) =>
-              priorTerms
-                .reduce(
-                  (equalities, prior) => equalities.where(prior.column, prior.value),
-                  clause,
-                )
-                .where(term.column, term.operator, term.value),
-            ),
-            priorTerms: [...priorTerms, term],
-          }),
-          { builder: outerBuilder, priorTerms: [] },
-        ).builder,
+      return query.where(
+        (outerBuilder) =>
+          terms.reduce(
+            ({ builder, priorTerms }, term) => ({
+              builder: builder.orWhere((clause) =>
+                priorTerms
+                  .reduce(
+                    (equalities, prior) =>
+                      equalities.where(prior.column, prior.value),
+                    clause,
+                  )
+                  .where(term.column, term.operator, term.value),
+              ),
+              priorTerms: [...priorTerms, term],
+            }),
+            { builder: outerBuilder, priorTerms: [] },
+          ).builder,
       );
     },
 

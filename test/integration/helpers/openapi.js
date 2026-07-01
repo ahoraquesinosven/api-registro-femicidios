@@ -1,7 +1,7 @@
 import Ajv2019 from "ajv/dist/2019.js";
 import addFormats from "ajv-formats";
+import { openApiDocument } from "../../../src/openapi/document.js";
 import schemas from "../../../src/openapi/schemas.js";
-import {openApiDocument} from "../../../src/openapi/document.js";
 // Registering the routers populates openApiDocument.paths as a side effect.
 // The server runs in a separate container now, so the test process must trigger
 // this itself rather than relying on importing the app.
@@ -10,7 +10,7 @@ import "../../../src/routers/index.js";
 // Mirrors the request-validation setup in src/openapi/validations.js so response
 // conformance is checked the same way the app validates requests. Injecting
 // `components: { schemas }` lets `$ref: "#/components/schemas/..."` resolve.
-const ajv = new Ajv2019({allErrors: true, strict: false});
+const ajv = new Ajv2019({ allErrors: true, strict: false });
 addFormats(ajv);
 
 function responseSchema(method, path, status) {
@@ -41,7 +41,7 @@ export function assertConformsToSpec(method, path, status, body) {
     return;
   }
 
-  const valid = ajv.validate({...schema, components: {schemas}}, body);
+  const valid = ajv.validate({ ...schema, components: { schemas } }, body);
   if (!valid) {
     throw new Error(
       `Response ${method} ${path} -> ${status} does not conform to the OpenAPI spec:\n` +

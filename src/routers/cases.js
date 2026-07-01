@@ -1,15 +1,20 @@
+import { omit, omitNullValues } from "../lib/fn.js";
+import { keysetPaginator } from "../lib/keysetPagination.js";
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
-import { omit, omitNullValues } from "../lib/fn.js"
-import { keysetPaginator } from "../lib/keysetPagination.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
 });
 
 const casesPaginator = keysetPaginator([
-  { name: "occurredAt", column: "case.occurredAt", direction: "desc", type: "date" },
+  {
+    name: "occurredAt",
+    column: "case.occurredAt",
+    direction: "desc",
+    type: "date",
+  },
   { name: "id", column: "case.id", direction: "desc", type: "id" },
 ]);
 
@@ -21,96 +26,118 @@ const caseValidations = (body) => {
 
   if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
     errors.push({
-      "type": "body",
-      "path": "/isRelatedToOrganizedCrime",
-      "message": "Debe ser verdadero si hay notas de crimen organizado",
+      type: "body",
+      path: "/isRelatedToOrganizedCrime",
+      message: "Debe ser verdadero si hay notas de crimen organizado",
     });
   }
 
   if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
     errors.push({
-      "type": "body",
-      "path": "/organizedCrimeNotes",
-      "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
+      type: "body",
+      path: "/organizedCrimeNotes",
+      message:
+        "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
     });
   }
 
-  if (body.victim.ageOfChildren && (body.victim.numberOfChildren < body.victim.ageOfChildren.length)) {
+  if (
+    body.victim.ageOfChildren &&
+    body.victim.numberOfChildren < body.victim.ageOfChildren.length
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/victim.numberOfChildren",
-      "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
+      type: "body",
+      path: "/victim.numberOfChildren",
+      message:
+        "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
     });
   }
 
   if (body.totalLegalComplaints && !body.hadLegalComplaints) {
     errors.push({
-      "type": "body",
-      "path": "/hadLegalComplaints",
-      "message": "Debe ser verdadero is se completo la cantidad de denuncias",
+      type: "body",
+      path: "/hadLegalComplaints",
+      message: "Debe ser verdadero is se completo la cantidad de denuncias",
     });
   }
 
   if (body.wasJudicialized && !body.hadLegalComplaints) {
     errors.push({
-      "type": "body",
-      "path": "/hadLegalComplaints",
-      "message": "Debe ser verdadero si tiene medidas judiciales",
+      type: "body",
+      path: "/hadLegalComplaints",
+      message: "Debe ser verdadero si tiene medidas judiciales",
     });
   }
 
   if (body.judicialMeasures && !body.wasJudicialized) {
     errors.push({
-      "type": "body",
-      "path": "/wasJudicialized",
-      "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
+      type: "body",
+      path: "/wasJudicialized",
+      message:
+        "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
     });
   }
 
-  if ((body.hasMediaGenderPerspective === true | body.hasMediaGenderPerspective === false) && !body.coverageMediaPerspectiveNotes) {
+  if (
+    (body.hasMediaGenderPerspective === true) |
+      (body.hasMediaGenderPerspective === false) &&
+    !body.coverageMediaPerspectiveNotes
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/coverageMediaPerspectiveNotes",
-      "message": "Debe completarse las notas de cobertura mediática si se indicó si el caso tuvo o no tuvo perspectiva de género en los medios",
+      type: "body",
+      path: "/coverageMediaPerspectiveNotes",
+      message:
+        "Debe completarse las notas de cobertura mediática si se indicó si el caso tuvo o no tuvo perspectiva de género en los medios",
     });
   }
 
-  if (body.coverageMediaPerspectiveNotes && (body.hasMediaGenderPerspective === null || body.hasMediaGenderPerspective === undefined)) {
+  if (
+    body.coverageMediaPerspectiveNotes &&
+    (body.hasMediaGenderPerspective === null ||
+      body.hasMediaGenderPerspective === undefined)
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/hasMediaGenderPerspective",
-      "message": "Debe indicarse si el caso tuvo o no perspectiva de género en los medios si se completaron las notas de cobertura mediática",
+      type: "body",
+      path: "/hasMediaGenderPerspective",
+      message:
+        "Debe indicarse si el caso tuvo o no perspectiva de género en los medios si se completaron las notas de cobertura mediática",
     });
   }
 
   //victim validations
   if (body.victim.numberOfChildren && !body.victim.hasChildren) {
     errors.push({
-      "type": "body",
-      "path": "/victim.hasChildren",
-      "message": "Debe ser verdadero si tiene al menos un hijx",
+      type: "body",
+      path: "/victim.hasChildren",
+      message: "Debe ser verdadero si tiene al menos un hijx",
     });
   }
 
-  if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
+  if (
+    body.victim.ageOfChildren &&
+    !body.victim.numberOfChildren &&
+    !body.victim.hasChildren
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/victim.hasChildren",
-      "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
+      type: "body",
+      path: "/victim.hasChildren",
+      message:
+        "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
     });
   }
 
   //aggresor validations
   if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
     errors.push({
-      "type": "body",
-      "path": "/aggressor.belongsSecurityForce",
-      "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
+      type: "body",
+      path: "/aggressor.belongsSecurityForce",
+      message:
+        "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
     });
   }
 
   return errors;
-}
+};
 
 router.operation({
   method: "post",
@@ -157,10 +184,7 @@ router.operation({
           .returning("id");
 
         await trx("cases").insert({
-          ...omit(body, [
-            "victim",
-            "aggressor",
-          ]),
+          ...omit(body, ["victim", "aggressor"]),
           aggressorId,
           victimId,
         });
@@ -256,24 +280,39 @@ router.operation({
   },
   handlers: [
     async (ctx) => {
-      const limit = ctx.query.limit !== undefined ?
-        Number(ctx.query.limit) :
-        50;
+      const limit =
+        ctx.query.limit !== undefined ? Number(ctx.query.limit) : 50;
 
       const baseQuery = knex("cases as case")
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where((builder) => {
-          if (ctx.query.fromDate) builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-          if (ctx.query.toDate) builder.where("case.occurredAt", "<", ctx.query.toDate);
-          if (ctx.query.province) builder.where("case.province", ctx.query.province);
-          if (ctx.query.location) builder.whereUnaccentedMatch("case.location", ctx.query.location);
-          if (ctx.query.caseCategory) builder.where("case.caseCategory", ctx.query.caseCategory);
-          if (ctx.query.victimFullName) builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-          if (ctx.query.murderWeapon) builder.where("case.murderWeapon", ctx.query.murderWeapon);
-          if (ctx.query.aggressorFullName) builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
-          if (ctx.query.victimBondAggressor) builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
-          if (ctx.query.wasItAnAttempt) builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
+          if (ctx.query.fromDate)
+            builder.where("case.occurredAt", ">=", ctx.query.fromDate);
+          if (ctx.query.toDate)
+            builder.where("case.occurredAt", "<", ctx.query.toDate);
+          if (ctx.query.province)
+            builder.where("case.province", ctx.query.province);
+          if (ctx.query.location)
+            builder.whereUnaccentedMatch("case.location", ctx.query.location);
+          if (ctx.query.caseCategory)
+            builder.where("case.caseCategory", ctx.query.caseCategory);
+          if (ctx.query.victimFullName)
+            builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
+          if (ctx.query.murderWeapon)
+            builder.where("case.murderWeapon", ctx.query.murderWeapon);
+          if (ctx.query.aggressorFullName)
+            builder.whereNameMatch(
+              "aggressor.fullName",
+              ctx.query.aggressorFullName,
+            );
+          if (ctx.query.victimBondAggressor)
+            builder.where(
+              "case.victimBondAggressor",
+              ctx.query.victimBondAggressor,
+            );
+          if (ctx.query.wasItAnAttempt)
+            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
         });
 
       // Count the full filtered set. Knex builders are mutable and
@@ -303,15 +342,16 @@ router.operation({
             "victim.age",
             "aggressor.fullName",
             "aggressor.age",
-          ]
+          ],
         }),
         countQuery,
       ]);
 
       const total = Number(count);
-      const next = (page.length === limit && limit > 0)
-        ? casesPaginator.encode(page[page.length - 1])
-        : null;
+      const next =
+        page.length === limit && limit > 0
+          ? casesPaginator.encode(page[page.length - 1])
+          : null;
 
       ctx.body = {
         limit,
@@ -342,16 +382,18 @@ router.operation({
     operationId: "updateCase",
     summary: "Update a case",
     security: [securitySchemes.oauth],
-    parameters: [{
-      in: "path",
-      name: "caseId",
-      required: true,
-      description: "ID of the case",
-      schema: {
-        type: "integer",
-        minimum: 1
-      }
-    }],
+    parameters: [
+      {
+        in: "path",
+        name: "caseId",
+        required: true,
+        description: "ID of the case",
+        schema: {
+          type: "integer",
+          minimum: 1,
+        },
+      },
+    ],
 
     requestBody: {
       required: true,
@@ -381,15 +423,19 @@ router.operation({
         return;
       }
 
-      const ids = await knex('cases').where('id', ctx.params.caseId).select("victimId", "aggressorId");
+      const ids = await knex("cases")
+        .where("id", ctx.params.caseId)
+        .select("victimId", "aggressorId");
 
       if (ids.length !== 1) {
         ctx.status = 404;
-        ctx.body = [{
-          "type": "path",
-          "path": "/caseId",
-          "message": `El caso ${ctx.params.caseId} no existe`,
-        }];
+        ctx.body = [
+          {
+            type: "path",
+            path: "/caseId",
+            message: `El caso ${ctx.params.caseId} no existe`,
+          },
+        ];
         return;
       }
 
@@ -409,8 +455,8 @@ router.operation({
         occupation: null,
         hasChildren: null,
         numberOfChildren: null,
-        ageOfChildren: null
-      }
+        ageOfChildren: null,
+      };
 
       const defaultAggressor = {
         fullName: null,
@@ -422,10 +468,9 @@ router.operation({
         behaviourPostCase: null,
         belongsSecurityForce: null,
         securityForce: null,
-      }
+      };
 
       const defaultCase = {
-        organizedCrimeNotes: null,
         wasItAnAttempt: null,
         isInsufficientDataOrUnderInvestigation: null,
         momentOfDay: null,
@@ -443,40 +488,33 @@ router.operation({
         generalNotes: null,
         hasMediaGenderPerspective: null,
         coverageMediaPerspectiveNotes: null,
-      }
-
+      };
 
       await knex.transaction(async (trx) => {
         await trx("victims")
-          .where('id', ids[0].victimId)
-          .update(
-            {
-              ...defaultVictim,
-              ...body.victim
-            }
-          );
+          .where("id", ids[0].victimId)
+          .update({
+            ...defaultVictim,
+            ...body.victim,
+          });
 
         await trx("aggressors")
-          .where('id', ids[0].aggressorId)
-          .update(
-            {
-              ...defaultAggressor,
-              ...body.aggressor
-            }
-          );
+          .where("id", ids[0].aggressorId)
+          .update({
+            ...defaultAggressor,
+            ...body.aggressor,
+          });
 
         await trx("cases")
-          .where('id', ctx.params.caseId)
+          .where("id", ctx.params.caseId)
           .update({
             ...omit(
               {
                 ...defaultCase,
-                ...body
-
-              }, [
-              "victim",
-              "aggressor",
-            ]),
+                ...body,
+              },
+              ["victim", "aggressor"],
+            ),
           });
       });
 
@@ -493,16 +531,18 @@ router.operation({
     operationId: "getCase",
     summary: "Get a case by id",
     security: [securitySchemes.oauth],
-    parameters: [{
-      in: "path",
-      name: "caseId",
-      required: true,
-      description: "ID of the case",
-      schema: {
-        type: "integer",
-        minimum: 1
-      }
-    }],
+    parameters: [
+      {
+        in: "path",
+        name: "caseId",
+        required: true,
+        description: "ID of the case",
+        schema: {
+          type: "integer",
+          minimum: 1,
+        },
+      },
+    ],
     responses: {
       200: {
         description: "Case, victim and agreesor retrieved successfully",
@@ -521,7 +561,7 @@ router.operation({
       const baseQuery = knex("cases as case")
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
-        .where('case.id', ctx.params.caseId);
+        .where("case.id", ctx.params.caseId);
 
       const cases = await baseQuery.toNestedObjects({
         rootQualifier: "case",
@@ -577,11 +617,13 @@ router.operation({
 
       if (cases.length === 0) {
         ctx.status = 404;
-        ctx.body = [{
-          "type": "path",
-          "path": "/caseId",
-          "message": `El caso ${ctx.params.caseId} no existe`,
-        }];
+        ctx.body = [
+          {
+            type: "path",
+            path: "/caseId",
+            message: `El caso ${ctx.params.caseId} no existe`,
+          },
+        ];
         return;
       }
 

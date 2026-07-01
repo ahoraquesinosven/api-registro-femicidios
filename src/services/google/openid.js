@@ -1,13 +1,13 @@
-import axios from 'axios';
-import {decodeJwt} from 'jose';
-import config from '../../config/values.js';
-import {createNonce} from '../../lib/crypto.js';
+import axios from "axios";
+import { decodeJwt } from "jose";
+import config from "../../config/values.js";
+import { createNonce } from "../../lib/crypto.js";
 
 let openIdConfiguration = null;
 const getOpenIdConfiguration = async () => {
   if (!openIdConfiguration) {
     const response = await axios.get(
-      "https://accounts.google.com/.well-known/openid-configuration"
+      "https://accounts.google.com/.well-known/openid-configuration",
     );
 
     openIdConfiguration = response.data;
@@ -16,9 +16,10 @@ const getOpenIdConfiguration = async () => {
   return openIdConfiguration;
 };
 
-export const buildAuthorizationURL = async ({callbackURL, state}) => {
+export const buildAuthorizationURL = async ({ callbackURL, state }) => {
   const googleOpenIDConfiguration = await getOpenIdConfiguration();
-  const authorizationEndpoint = googleOpenIDConfiguration["authorization_endpoint"];
+  const authorizationEndpoint =
+    googleOpenIDConfiguration.authorization_endpoint;
 
   const result = new URL(authorizationEndpoint);
   result.searchParams.append("client_id", config.auth.google.clientId);
@@ -31,9 +32,9 @@ export const buildAuthorizationURL = async ({callbackURL, state}) => {
   return result;
 };
 
-export const exchangeAuthorizationCode = async ({callbackURL, code}) => {
+export const exchangeAuthorizationCode = async ({ callbackURL, code }) => {
   const googleOpenIDConfiguration = await getOpenIdConfiguration();
-  const tokenEndpoint = googleOpenIDConfiguration["token_endpoint"];
+  const tokenEndpoint = googleOpenIDConfiguration.token_endpoint;
 
   const requestData = new URLSearchParams();
   requestData.append("code", code);
@@ -43,7 +44,7 @@ export const exchangeAuthorizationCode = async ({callbackURL, code}) => {
   requestData.append("grant_type", "authorization_code");
 
   const response = await axios.post(tokenEndpoint, requestData);
-  const token = response.data["id_token"];
+  const token = response.data.id_token;
 
   return decodeJwt(token);
 };
@@ -71,4 +72,3 @@ export const verifyGoogleTokenValues = (token) => {
 
   return true;
 };
-

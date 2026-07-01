@@ -4,13 +4,23 @@ x-base-service-config: &base-service-config
   build:
     context: .
     target: development
+    args:
+      HOST_UID: ${HOST_UID}
+      HOST_GID: ${HOST_GID}
   develop:
     watch:
       - path: package.json
         action: rebuild
   volumes:
+    # Mount source and config files individually (not the whole project), so the
+    # node_modules baked into the image is never shadowed by the host. Deps stay
+    # purely in the image: `docker compose build` always reflects the lockfile,
+    # with no volume to drift out of sync. Add a line here when a new top-level
+    # source/config file needs to be live-editable in the container.
     - './knexfile.mjs:/opt/project/knexfile.mjs'
     - './package.json:/opt/project/package.json'
+    - './package-lock.json:/opt/project/package-lock.json'
+    - './biome.json:/opt/project/biome.json'
     - './redocly.yaml:/opt/project/redocly.yaml'
     - './src:/opt/project/src'
     - './migrations:/opt/project/migrations'
