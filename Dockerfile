@@ -1,7 +1,7 @@
 ################################################################################
 # Base dependencies
 ################################################################################
-FROM node:20 AS dependencies
+FROM node:24 AS dependencies
 
 # Setup the project directory
 RUN mkdir -p /opt/project
@@ -12,7 +12,7 @@ ENV NODE_ENV=production
 
 # Setup application dependencies
 COPY package*.json /opt/project/
-RUN npm --unsafe-perm install --only production --loglevel verbose
+RUN npm --unsafe-perm install --omit=dev --loglevel verbose
 
 # Setup the application code
 COPY src /opt/project/src
@@ -45,7 +45,7 @@ CMD ["npm", "run", "start:dev"]
 # node_modules is baked into the image and not mounted, so this lets
 # `docker compose run dev npm i ...` resolve deps and write the lockfile as the
 # dev user without root (the in-container install is throwaway; `build` bakes it).
-RUN npm --unsafe-perm install --only development --loglevel verbose \
+RUN npm --unsafe-perm install --include=dev --loglevel verbose \
   && chown -R ${HOST_UID}:${HOST_GID} /opt/project/node_modules /home/node
 
 ################################################################################
