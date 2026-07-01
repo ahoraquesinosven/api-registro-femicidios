@@ -1,6 +1,7 @@
 export function parseBoolean(value) {
     if (!value || value.trim() === "" || value.trim() === "Sin Datos") return undefined;
-    return value.trim().toLowerCase().startsWith("si");
+    const value_lower = value.trim().toLowerCase();
+    return value_lower.startsWith("si")||value_lower.startsWith("sí");
 }
 
 export function parseInteger(value) {
@@ -212,6 +213,11 @@ export function parseSecurityForce(value) {
         "Policia": "POLICIA",
         "Militares": "MILITAR",
         "Ex teniente de Infantería del Ejército": "MILITAR",
+        "Suboficial en actividad - Ciudad de Recreo": "MILITAR",
+        "Ex funcionario del servicio penitenciario provincial": "POLICIA",
+        "Jubilado Ex Policia": "POLICIA",
+        "Policía exonerado de la fuerza en el 2006 al estar vinculado con algunos delitos": "POLICIA",
+        "ex efectivo policial. Había sido apartado de la fuerza": "POLICIA",
     };
     const trimmedValue = value && value.trim();
     if (!trimmedValue || trimmedValue === "" || trimmedValue.toLowerCase() === "sin datos") return undefined;
