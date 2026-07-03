@@ -191,7 +191,6 @@ function buildAggressor(row) {
 
     const belongsSecurityForce = p.parseBoolean(row.belongsSecurityForce) || securityForce !== undefined;
     if (belongsSecurityForce !== undefined) aggressor.belongsSecurityForce = belongsSecurityForce;
-    if (securityForce !== undefined) aggressor.belongsSecurityForce = true;
     return aggressor;
 }
 
