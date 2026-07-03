@@ -611,6 +611,7 @@ router.operation({
           "aggressor.hasPreviousCases",
           "aggressor.wasInPrison",
           "aggressor.behaviourPostCase",
+          "aggressor.belongsSecurityForce",
           "aggressor.securityForce",
         ],
       });
