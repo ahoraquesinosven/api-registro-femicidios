@@ -7,14 +7,14 @@ export default {
           type: "array",
           items: {
             type: "object",
-            required: [ "type", "path", "message" ],
+            required: ["type", "path", "message"],
 
             properties: {
-              type: { type: "string", enum: [ "parameter", "body" ] },
-              path: { type: "string", },
-              message: { type: "string", },
+              type: { type: "string", enum: ["parameter", "body"] },
+              path: { type: "string" },
+              message: { type: "string" },
             },
-          }
+          },
         },
       },
     },
@@ -28,17 +28,32 @@ export default {
           type: "array",
           items: {
             type: "object",
-            required: [ "type", "path", "message" ],
+            required: ["type", "path", "message"],
 
             properties: {
-              type: { type: "string", enum: [ "parameter", "body" ] },
-              path: { type: "string", },
-              message: { type: "string", },
+              type: { type: "string", enum: ["parameter", "body"] },
+              path: { type: "string" },
+              message: { type: "string" },
             },
-          }
+          },
         },
       },
     },
+  },
 
-  }
-}
+  InvalidCursorResponse: {
+    description: "Invalid cursor",
+    content: {
+      "application/json": {
+        schema: {
+          type: "object",
+          properties: { message: { type: "string" } },
+        },
+      },
+    },
+  },
+
+  UnauthorizedResponse: {
+    description: "Missing or invalid authentication credentials",
+  },
+};

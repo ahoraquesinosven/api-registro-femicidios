@@ -1,6 +1,3 @@
-const momentOfDayList = [
-"DIURNO",
-"NOCTURNO"
-];
+const momentOfDayList = ["DIURNO", "NOCTURNO"];
 
 export default momentOfDayList;

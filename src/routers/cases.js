@@ -1,113 +1,150 @@
+import { omit, omitNullValues } from "../lib/fn.js";
+import { keysetPaginator } from "../lib/keysetPagination.js";
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
 import knex from "../services/knex.js";
-import { omit } from "../lib/fn.js"
 
 const router = new OpenApiRouter({
   prefix: "/v1/cases",
 });
+
+const casesPaginator = keysetPaginator([
+  {
+    name: "occurredAt",
+    column: "case.occurredAt",
+    direction: "desc",
+    type: "date",
+  },
+  { name: "id", column: "case.id", direction: "desc", type: "id" },
+]);
+
+const toDateString = (value) =>
+  value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
 const caseValidations = (body) => {
   const errors = [];
 
   if (body.organizedCrimeNotes && !body.isRelatedToOrganizedCrime) {
     errors.push({
-      "type": "body",
-      "path": "/isRelatedToOrganizedCrime",
-      "message": "Debe ser verdadero si hay notas de crimen organizado",
+      type: "body",
+      path: "/isRelatedToOrganizedCrime",
+      message: "Debe ser verdadero si hay notas de crimen organizado",
     });
   }
 
   if (!body.organizedCrimeNotes && body.isRelatedToOrganizedCrime) {
     errors.push({
-      "type": "body",
-      "path": "/organizedCrimeNotes",
-      "message": "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
+      type: "body",
+      path: "/organizedCrimeNotes",
+      message:
+        "Debe completarse notas adicionales si es un caso relacionado con el crimen organizado",
     });
   }
 
-  if (body.victim.ageOfChildren && (body.victim.numberOfChildren < body.victim.ageOfChildren.length)) {
+  if (
+    body.victim.ageOfChildren &&
+    body.victim.numberOfChildren < body.victim.ageOfChildren.length
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/victim.numberOfChildren",
-      "message": "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
+      type: "body",
+      path: "/victim.numberOfChildren",
+      message:
+        "La cantidad de hijxs no puede ser menor a la cantidad de edades proporcionadas",
     });
   }
 
   if (body.totalLegalComplaints && !body.hadLegalComplaints) {
     errors.push({
-      "type": "body",
-      "path": "/hadLegalComplaints",
-      "message": "Debe ser verdadero is se completo la cantidad de denuncias",
+      type: "body",
+      path: "/hadLegalComplaints",
+      message: "Debe ser verdadero is se completo la cantidad de denuncias",
     });
   }
 
   if (body.wasJudicialized && !body.hadLegalComplaints) {
     errors.push({
-      "type": "body",
-      "path": "/hadLegalComplaints",
-      "message": "Debe ser verdadero si tiene medidas judiciales",
+      type: "body",
+      path: "/hadLegalComplaints",
+      message: "Debe ser verdadero si tiene medidas judiciales",
     });
   }
 
   if (body.judicialMeasures && !body.wasJudicialized) {
     errors.push({
-      "type": "body",
-      "path": "/wasJudicialized",
-      "message": "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
+      type: "body",
+      path: "/wasJudicialized",
+      message:
+        "Debe ser verdadero si tiene al menos una medidas judicial seleccionada",
     });
   }
 
-  if ((body.hasMediaGenderPerspective === true | body.hasMediaGenderPerspective === false) && !body.coverageMediaPerspectiveNotes) {
+  if (
+    (body.hasMediaGenderPerspective === true) |
+      (body.hasMediaGenderPerspective === false) &&
+    !body.coverageMediaPerspectiveNotes
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/coverageMediaPerspectiveNotes",
-      "message": "Debe completarse las notas de cobertura mediática si se indicó si el caso tuvo o no tuvo perspectiva de género en los medios",
+      type: "body",
+      path: "/coverageMediaPerspectiveNotes",
+      message:
+        "Debe completarse las notas de cobertura mediática si se indicó si el caso tuvo o no tuvo perspectiva de género en los medios",
     });
   }
 
-  if (body.coverageMediaPerspectiveNotes && (body.hasMediaGenderPerspective === null || body.hasMediaGenderPerspective === undefined)) {
+  if (
+    body.coverageMediaPerspectiveNotes &&
+    (body.hasMediaGenderPerspective === null ||
+      body.hasMediaGenderPerspective === undefined)
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/hasMediaGenderPerspective",
-      "message": "Debe indicarse si el caso tuvo o no perspectiva de género en los medios si se completaron las notas de cobertura mediática",
+      type: "body",
+      path: "/hasMediaGenderPerspective",
+      message:
+        "Debe indicarse si el caso tuvo o no perspectiva de género en los medios si se completaron las notas de cobertura mediática",
     });
   }
 
   //victim validations
   if (body.victim.numberOfChildren && !body.victim.hasChildren) {
     errors.push({
-      "type": "body",
-      "path": "/victim.hasChildren",
-      "message": "Debe ser verdadero si tiene al menos un hijx",
+      type: "body",
+      path: "/victim.hasChildren",
+      message: "Debe ser verdadero si tiene al menos un hijx",
     });
   }
 
-  if (body.victim.ageOfChildren && !body.victim.numberOfChildren && !body.victim.hasChildren) {
+  if (
+    body.victim.ageOfChildren &&
+    !body.victim.numberOfChildren &&
+    !body.victim.hasChildren
+  ) {
     errors.push({
-      "type": "body",
-      "path": "/victim.hasChildren",
-      "message": "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
+      type: "body",
+      path: "/victim.hasChildren",
+      message:
+        "Debe ser verdadero si se cargo al menos una edad de al menos un hijx",
     });
   }
 
   //aggresor validations
   if (body.aggressor.securityForce && !body.aggressor.belongsSecurityForce) {
     errors.push({
-      "type": "body",
-      "path": "/aggressor.belongsSecurityForce",
-      "message": "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
+      type: "body",
+      path: "/aggressor.belongsSecurityForce",
+      message:
+        "Debe ser verdadero si se selecciona al menos una fuerza de seguridad",
     });
   }
 
   return errors;
-}
+};
 
 router.operation({
   method: "post",
   relativePath: "/",
   spec: {
     tags: ["cases"],
+    operationId: "createCase",
     summary: "Create a new case",
     security: [securitySchemes.oauth, securitySchemes.internal],
     requestBody: {
@@ -122,6 +159,7 @@ router.operation({
       201: {
         description: "Case created successfully",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
     },
   },
@@ -146,10 +184,7 @@ router.operation({
           .returning("id");
 
         await trx("cases").insert({
-          ...omit(body, [
-            "victim",
-            "aggressor",
-          ]),
+          ...omit(body, ["victim", "aggressor"]),
           aggressorId,
           victimId,
         });
@@ -165,6 +200,7 @@ router.operation({
   relativePath: "/",
   spec: {
     tags: ["cases"],
+    operationId: "listCases",
     summary: "List all cases",
     security: [securitySchemes.oauth],
     parameters: [
@@ -218,110 +254,122 @@ router.operation({
         in: "query",
         schema: { type: "boolean" },
       },
-
-
+      {
+        name: "limit",
+        in: "query",
+        schema: { type: "integer", minimum: 0, maximum: 200, default: 50 },
+      },
+      {
+        name: "start",
+        in: "query",
+        schema: { type: "string" },
+      },
     ],
     responses: {
       200: {
-        description: "List of cases",
+        description: "Paginated list of cases",
         content: {
           "application/json": {
-            schema: {
-              type: "array",
-              items: {
-                type: "object",
-                required: [
-                  "id", "occurredAt", "province", "victim", "aggressor", "caseCategory",
-                ],
-                properties: {
-                  id: { type: "integer" },
-                  caseCategory: { $ref: "#/components/schemas/Case/properties/caseCategory" },
-                  occurredAt: { $ref: "#/components/schemas/Case/properties/occurredAt" },
-                  province: { $ref: "#/components/schemas/Case/properties/province" },
-                  location: { $ref: "#/components/schemas/Case/properties/location" },
-                  murderWeapon: { $ref: "#/components/schemas/Case/properties/location" },
-                  victimBondAggressor: { $ref: "#/components/schemas/CaseMurderWeapon" },
-                  wasItAnAttempt: { type: "boolean" },
-                  victim: {
-                    type: "object",
-                    properties: {
-                      fullName: { $ref: "#/components/schemas/Case/properties/victim/properties/fullName" },
-                      age: { $ref: "#/components/schemas/Case/properties/victim/properties/age" },
-                    },
-                  },
-                  aggressor: {
-                    type: "object",
-                    properties: {
-                      fullName: { $ref: "#/components/schemas/Case/properties/aggressor/properties/fullName" },
-                      age: { $ref: "#/components/schemas/Case/properties/aggressor/properties/age" },
-                    },
-                  },
-                },
-              },
-            },
+            schema: { $ref: "#/components/schemas/CaseListPage" },
           },
         },
       },
+      400: { $ref: "#/components/responses/InvalidCursorResponse" },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
     },
   },
   handlers: [
     async (ctx) => {
+      const limit =
+        ctx.query.limit !== undefined ? Number(ctx.query.limit) : 50;
+
       const baseQuery = knex("cases as case")
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where((builder) => {
-          if (ctx.query.fromDate) {
+          if (ctx.query.fromDate)
             builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-          }
-          if (ctx.query.toDate) {
+          if (ctx.query.toDate)
             builder.where("case.occurredAt", "<", ctx.query.toDate);
-          }
-          if (ctx.query.province) {
+          if (ctx.query.province)
             builder.where("case.province", ctx.query.province);
-          }
-          if (ctx.query.location) {
+          if (ctx.query.location)
             builder.whereUnaccentedMatch("case.location", ctx.query.location);
-          }
-          if (ctx.query.caseCategory) {
+          if (ctx.query.caseCategory)
             builder.where("case.caseCategory", ctx.query.caseCategory);
-          }
-          if (ctx.query.victimFullName) {
+          if (ctx.query.victimFullName)
             builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-          }
-          if (ctx.query.murderWeapon) {
+          if (ctx.query.murderWeapon)
             builder.where("case.murderWeapon", ctx.query.murderWeapon);
-          }
-          if (ctx.query.aggressorFullName) {
-            builder.whereNameMatch("aggressor.fullName", ctx.query.aggressorFullName);
-          }
-          if (ctx.query.victimBondAggressor) {
-            builder.where("case.victimBondAggressor", ctx.query.victimBondAggressor);
-          }
-          if (ctx.query.wasItAnAttempt) {
+          if (ctx.query.aggressorFullName)
+            builder.whereNameMatch(
+              "aggressor.fullName",
+              ctx.query.aggressorFullName,
+            );
+          if (ctx.query.victimBondAggressor)
+            builder.where(
+              "case.victimBondAggressor",
+              ctx.query.victimBondAggressor,
+            );
+          if (ctx.query.wasItAnAttempt)
             builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
-          }
-        })
-        .orderBy("case.occurredAt", "desc");
+        });
 
-      const results = await baseQuery.toNestedObjects({
-        rootQualifier: "case",
-        fields: [
-          "case.id",
-          "case.caseCategory",
-          "case.occurredAt",
-          "case.province",
-          "case.location",
-          "case.murderWeapon",
-          "case.victimBondAggressor",
-          "case.wasItAnAttempt",
-          "victim.fullName",
-          "victim.age",
-          "aggressor.fullName",
-          "aggressor.age",
-        ],
-      });
+      // Count the full filtered set. Knex builders are mutable and
+      // applyCursor/applyOrder/limit all return the same instance, so the
+      // count needs its own clone taken before those mutate baseQuery —
+      // otherwise count(case.id) lands on the page query (no GROUP BY).
+      const countQuery = baseQuery.clone().count("case.id as count");
 
-      ctx.body = results;
+      const cursorData = casesPaginator.decode(ctx.query.start);
+      const pageQuery = casesPaginator
+        .applyOrder(casesPaginator.applyCursor(baseQuery, cursorData))
+        .limit(limit);
+
+      const [page, [{ count }]] = await Promise.all([
+        pageQuery.toNestedObjects({
+          rootQualifier: "case",
+          fields: [
+            "case.id",
+            "case.caseCategory",
+            "case.occurredAt",
+            "case.province",
+            "case.location",
+            "case.murderWeapon",
+            "case.victimBondAggressor",
+            "case.wasItAnAttempt",
+            "victim.fullName",
+            "victim.age",
+            "aggressor.fullName",
+            "aggressor.age",
+          ],
+        }),
+        countQuery,
+      ]);
+
+      const total = Number(count);
+      const next =
+        page.length === limit && limit > 0
+          ? casesPaginator.encode(page[page.length - 1])
+          : null;
+
+      ctx.body = {
+        limit,
+        total,
+        start: ctx.query.start ?? null,
+        next,
+        // Optional fields are non-nullable in the Case schema, so drop the
+        // null-valued keys the DB returns for unset fields rather than
+        // emitting them and breaking spec conformance.
+        page: page.map((item) =>
+          omitNullValues({
+            ...item,
+            occurredAt: toDateString(item.occurredAt),
+            victim: omitNullValues(item.victim),
+            aggressor: omitNullValues(item.aggressor),
+          }),
+        ),
+      };
     },
   ],
 });
@@ -331,18 +379,21 @@ router.operation({
   relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
+    operationId: "updateCase",
     summary: "Update a case",
     security: [securitySchemes.oauth],
-    parameters: [{
-      in: "path",
-      name: "caseId",
-      required: true,
-      description: "ID of the case",
-      schema: {
-        type: "integer",
-        minimum: 1
-      }
-    }],
+    parameters: [
+      {
+        in: "path",
+        name: "caseId",
+        required: true,
+        description: "ID of the case",
+        schema: {
+          type: "integer",
+          minimum: 1,
+        },
+      },
+    ],
 
     requestBody: {
       required: true,
@@ -356,6 +407,7 @@ router.operation({
       204: {
         description: "Case updated successfully",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       422: { $ref: "#/components/responses/ValidationErrorResponse" },
       404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
@@ -371,15 +423,19 @@ router.operation({
         return;
       }
 
-      const ids = await knex('cases').where('id', ctx.params.caseId).select("victimId", "aggressorId");
+      const ids = await knex("cases")
+        .where("id", ctx.params.caseId)
+        .select("victimId", "aggressorId");
 
       if (ids.length !== 1) {
         ctx.status = 404;
-        ctx.body = [{
-          "type": "path",
-          "path": "/caseId",
-          "message": `El caso ${ctx.params.caseId} no existe`,
-        }];
+        ctx.body = [
+          {
+            type: "path",
+            path: "/caseId",
+            message: `El caso ${ctx.params.caseId} no existe`,
+          },
+        ];
         return;
       }
 
@@ -399,8 +455,8 @@ router.operation({
         occupation: null,
         hasChildren: null,
         numberOfChildren: null,
-        ageOfChildren: null
-      }
+        ageOfChildren: null,
+      };
 
       const defaultAggressor = {
         fullName: null,
@@ -412,10 +468,9 @@ router.operation({
         behaviourPostCase: null,
         belongsSecurityForce: null,
         securityForce: null,
-      }
+      };
 
       const defaultCase = {
-        organizedCrimeNotes: null,
         wasItAnAttempt: null,
         isInsufficientDataOrUnderInvestigation: null,
         momentOfDay: null,
@@ -433,40 +488,33 @@ router.operation({
         generalNotes: null,
         hasMediaGenderPerspective: null,
         coverageMediaPerspectiveNotes: null,
-      }
-
+      };
 
       await knex.transaction(async (trx) => {
         await trx("victims")
-          .where('id', ids[0].victimId)
-          .update(
-            {
-              ...defaultVictim,
-              ...body.victim
-            }
-          );
+          .where("id", ids[0].victimId)
+          .update({
+            ...defaultVictim,
+            ...body.victim,
+          });
 
         await trx("aggressors")
-          .where('id', ids[0].aggressorId)
-          .update(
-            {
-              ...defaultAggressor,
-              ...body.aggressor
-            }
-          );
+          .where("id", ids[0].aggressorId)
+          .update({
+            ...defaultAggressor,
+            ...body.aggressor,
+          });
 
         await trx("cases")
-          .where('id', ctx.params.caseId)
+          .where("id", ctx.params.caseId)
           .update({
             ...omit(
               {
                 ...defaultCase,
-                ...body
-
-              }, [
-              "victim",
-              "aggressor",
-            ]),
+                ...body,
+              },
+              ["victim", "aggressor"],
+            ),
           });
       });
 
@@ -480,18 +528,21 @@ router.operation({
   relativePath: "/{caseId}",
   spec: {
     tags: ["cases"],
+    operationId: "getCase",
     summary: "Get a case by id",
     security: [securitySchemes.oauth],
-    parameters: [{
-      in: "path",
-      name: "caseId",
-      required: true,
-      description: "ID of the case",
-      schema: {
-        type: "integer",
-        minimum: 1
-      }
-    }],
+    parameters: [
+      {
+        in: "path",
+        name: "caseId",
+        required: true,
+        description: "ID of the case",
+        schema: {
+          type: "integer",
+          minimum: 1,
+        },
+      },
+    ],
     responses: {
       200: {
         description: "Case, victim and agreesor retrieved successfully",
@@ -501,6 +552,7 @@ router.operation({
           },
         },
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
       404: { $ref: "#/components/responses/ValidationErrorNotFound" },
     },
   },
@@ -509,7 +561,7 @@ router.operation({
       const baseQuery = knex("cases as case")
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
-        .where('case.id', ctx.params.caseId);
+        .where("case.id", ctx.params.caseId);
 
       const cases = await baseQuery.toNestedObjects({
         rootQualifier: "case",
@@ -559,21 +611,33 @@ router.operation({
           "aggressor.hasPreviousCases",
           "aggressor.wasInPrison",
           "aggressor.behaviourPostCase",
+          "aggressor.belongsSecurityForce",
           "aggressor.securityForce",
         ],
       });
 
       if (cases.length === 0) {
         ctx.status = 404;
-        ctx.body = [{
-          "type": "path",
-          "path": "/caseId",
-          "message": `El caso ${ctx.params.caseId} no existe`,
-        }];
+        ctx.body = [
+          {
+            type: "path",
+            path: "/caseId",
+            message: `El caso ${ctx.params.caseId} no existe`,
+          },
+        ];
         return;
       }
 
-      ctx.body = cases[0];
+      const c = cases[0];
+      // Optional fields are non-nullable in the Case schema, so drop the
+      // null-valued keys the DB returns for unset fields, mirroring the list
+      // handler, rather than emitting them and breaking spec conformance.
+      ctx.body = omitNullValues({
+        ...c,
+        occurredAt: toDateString(c.occurredAt),
+        victim: omitNullValues(c.victim),
+        aggressor: omitNullValues(c.aggressor),
+      });
     },
   ],
 });

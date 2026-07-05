@@ -1,11 +1,18 @@
 export function parseBoolean(value) {
     if (!value || value.trim() === "" || value.trim() === "Sin Datos") return undefined;
-    return value.trim().toLowerCase().startsWith("si");
+    const value_lower = value.trim().toLowerCase();
+    return value_lower.startsWith("si")||value_lower.startsWith("sí");
 }
 
 export function parseInteger(value) {
     if (!value || value.trim() === "") return undefined;
     const parsed = parseInt(value.trim(), 10);
+    return isNaN(parsed) ? undefined : parsed;
+}
+
+export function parseDecimal(value) {
+    if (!value || value.trim() === "") return undefined;
+    const parsed = parseFloat(value.trim().replace(",", "."));
     return isNaN(parsed) ? undefined : parsed;
 }
 
@@ -135,6 +142,8 @@ export function parseCaseCategory(value) {
         "Intento de Travesticidio/Transfemicidio": "TRAVESTICIDIO",
         "Crímenes de Odio": "CRIMEN_DE_ODIO",
         "Instigación al suicidio": "INSTIGACION_AL_SUICIDIO",
+        "Intento de Transfemicidio": "TRANSFEMICIDIO",
+        "Travesticidio": "TRAVESTICIDIO",
     };
     const trimmedValue = value && value.trim();
     if (!trimmedValue || trimmedValue === "" || trimmedValue.toLowerCase() === "sin datos") return undefined;
@@ -204,6 +213,11 @@ export function parseSecurityForce(value) {
         "Policia": "POLICIA",
         "Militares": "MILITAR",
         "Ex teniente de Infantería del Ejército": "MILITAR",
+        "Suboficial en actividad - Ciudad de Recreo": "MILITAR",
+        "Ex funcionario del servicio penitenciario provincial": "POLICIA",
+        "Jubilado Ex Policia": "POLICIA",
+        "Policía exonerado de la fuerza en el 2006 al estar vinculado con algunos delitos": "POLICIA",
+        "ex efectivo policial. Había sido apartado de la fuerza": "POLICIA",
     };
     const trimmedValue = value && value.trim();
     if (!trimmedValue || trimmedValue === "" || trimmedValue.toLowerCase() === "sin datos") return undefined;

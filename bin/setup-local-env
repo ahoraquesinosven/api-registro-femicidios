@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run from the repository root (this script lives in bin/).
+cd "$(dirname "$0")/.."
+
+ENV_FILE=".env"
+
+# 1. Ensure .env exists. It is required before any `docker compose` call,
+#    since compose loads it via env_file. The config detector also runs inside
+#    the container and reads the values already present here.
+if [[ ! -f "$ENV_FILE" ]]; then
+  cat > "$ENV_FILE" <<'EOF'
+# ------------------------------------------------------------------------------
+# Local environment overrides. Shared defaults live in .env.defaults.
+# Required settings without a default are appended below by bin/setup-local-env.
+# ------------------------------------------------------------------------------
+EOF
+  echo "Created $ENV_FILE"
+fi
+
+# 2. Pin host UID/GID so the dev container writes files as you, not root.
+grep -q '^HOST_UID=' "$ENV_FILE" || echo "HOST_UID=$(id -u)" >> "$ENV_FILE"
+grep -q '^HOST_GID=' "$ENV_FILE" || echo "HOST_GID=$(id -g)" >> "$ENV_FILE"
+export HOST_UID="$(id -u)" HOST_GID="$(id -g)"
+
+# 3. Detect required settings still missing a value (-T: no TTY, clean output).
+echo "Checking for missing configuration..."
+missing="$(docker compose run --rm -T dev node src/scripts/config.js)"
+
+if [[ -n "$missing" ]]; then
+  if [[ ! -t 0 ]]; then
+    echo "ERROR: missing required configuration but no interactive terminal to prompt." >&2
+    echo "Set these in $ENV_FILE and re-run:" >&2
+    cut -f1 <<< "$missing" | sed 's/^/  - /' >&2
+    exit 1
+  fi
+
+  echo "Some required settings have no value. You'll be prompted for each."
+  # Read keystrokes from /dev/tty: stdin is occupied by the here-string below.
+  while IFS=$'\t' read -r key doc; do
+    [[ -z "$key" ]] && continue
+    echo ""
+    echo "# $doc"
+    read -rsp "$key=" value </dev/tty
+    echo ""
+    if [[ -z "$value" ]]; then
+      echo "No value provided for $key. Aborting. Re-run ./setup-dev-environment when ready." >&2
+      exit 1
+    fi
+    printf '\n# %s\n%s=%s\n' "$doc" "$key" "$value" >> "$ENV_FILE"
+  done <<< "$missing"
+  echo ""
+  echo "Configuration written to $ENV_FILE."
+else
+  echo "Configuration complete."
+fi
+
+# 4. Initialize the database.
+echo "Starting db..."
+docker compose up -d db
+echo "Waiting for db..."
+until docker compose exec -T db pg_isready -U vivas -d observatorio-femicidios >/dev/null 2>&1; do
+  sleep 1
+done
+echo "Running migrations..."
+docker compose run --rm dev knex migrate:latest
+echo "Stopping services..."
+docker compose down
+
+cat <<EOF
+
+================================================================================
+Setup complete. Configuration is in place, database migrated, services stopped.
+
+Start the app: docker compose up
+================================================================================
+EOF

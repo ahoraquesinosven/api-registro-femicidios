@@ -1,34 +1,39 @@
+x-base-service-config: &base-service-config
+  image: observatorio/api-registro-femicidios
+  user: "${HOST_UID}:${HOST_GID}"
+  build:
+    context: .
+    target: development
+    args:
+      HOST_UID: ${HOST_UID}
+      HOST_GID: ${HOST_GID}
+  develop:
+    watch:
+      - path: package.json
+        action: rebuild
+  volumes:
+    # Mount source and config files individually (not the whole project), so the
+    # node_modules baked into the image is never shadowed by the host. Deps stay
+    # purely in the image: `docker compose build` always reflects the lockfile,
+    # with no volume to drift out of sync. Add a line here when a new top-level
+    # source/config file needs to be live-editable in the container.
+    - './knexfile.mjs:/opt/project/knexfile.mjs'
+    - './package.json:/opt/project/package.json'
+    - './package-lock.json:/opt/project/package-lock.json'
+    - './biome.json:/opt/project/biome.json'
+    - './redocly.yaml:/opt/project/redocly.yaml'
+    - './src:/opt/project/src'
+    - './migrations:/opt/project/migrations'
+    - './test:/opt/project/test'
+  env_file:
+    - .env.defaults
+    - .env
+
 services:
   dev:
-    image: observatorio/api-registro-femicidios
-    user: "${UID}:${GID}"
-    build:
-      context: .
-      target: development
-    develop:
-      watch:
-        - path: package.json
-          action: rebuild
-    volumes:
-      - './knexfile.mjs:/opt/project/knexfile.mjs'
-      - './src:/opt/project/src'
-      - './bin:/opt/project/bin'
-      - './spec:/opt/project/spec'
-      - './migrations:/opt/project/migrations'
+    <<: *base-service-config
     ports:
       - '8080:8080'
-    env_file:
-      - .env.defaults
-      - .env
-
-  swagger-ui:
-    image: swaggerapi/swagger-ui
-    ports:
-      - '8081:8080'
-    environment:
-      - SWAGGER_JSON_URL=http://localhost:8080/v1/openapi.json
-      - OAUTH_CLIENT_ID=1234
-      - OAUTH_USE_PKCE=true
 
   db:
     image: postgres:11
@@ -40,6 +45,63 @@ services:
       - POSTGRES_DB=observatorio-femicidios
       - POSTGRES_USER=vivas
       - POSTGRES_PASSWORD=nosqueremos
+
+  # Dedicated server-under-test, isolated from the dev server and its db.
+  # Profiled so `docker compose up` skips it; runs only under `--profile test`
+  # or when named explicitly (e.g. `docker compose run test-api-server ...`).
+  test-api-server:
+    <<: *base-service-config
+    profiles:
+      - test
+    command:
+      - npm
+      - run
+      - start:prod
+    environment:
+      - DB_CONNECTION_STRING=postgresql://vivas:nosqueremos@test-db:5432/observatorio-femicidios-test
+      - TEST_TARGET_URL=http://test-api-server:8080
+    depends_on:
+      test-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:8080/v1/openapi.json').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    ports:
+      - '8081:8080'
+    environment:
+      - SWAGGER_JSON_URL=http://localhost:8080/v1/openapi.json
+      - OAUTH_CLIENT_ID=1234
+      - OAUTH_USE_PKCE=true
+
+  # Ephemeral Postgres for the integration suite. Profiled (skipped by plain
+  # `docker compose up`). Data lives on tmpfs, so it's wiped with the container
+  # and never touches the dev `pgdata` volume.
+  test-db:
+    image: postgres:11
+    profiles:
+      - test
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=observatorio-femicidios-test
+      - POSTGRES_USER=vivas
+      - POSTGRES_PASSWORD=nosqueremos
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U vivas -d observatorio-femicidios-test
+      interval: 1s
+      timeout: 3s
+      retries: 30
 
 volumes:
   pgdata:

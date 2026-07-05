@@ -2,7 +2,7 @@ import config from "../config/values.js";
 import { tokenRequest } from "../lib/oauth.js";
 
 export async function checkUserAuth(ctx) {
-  const authorization = ctx.request.headers["authorization"];
+  const authorization = ctx.request.headers.authorization;
   if (!authorization) {
     return { authorized: false };
   }
@@ -20,13 +20,13 @@ export async function checkUserAuth(ctx) {
       authorized: true,
       payload,
     };
-  } catch (e) {
+  } catch (_e) {
     return { authorized: false };
   }
 }
 
 export async function checkServerAuth(ctx) {
-  const authorization = ctx.request.headers["authorization"];
+  const authorization = ctx.request.headers.authorization;
   if (!authorization) {
     return { authorized: false };
   }
@@ -50,5 +50,5 @@ export function requireAuth(supportedCheckers) {
 
     ctx.status = 401;
     return;
-  }
+  };
 }

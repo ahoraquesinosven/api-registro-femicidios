@@ -18,5 +18,5 @@ const FEEDS = [
 
 export function fetchAllRssFeeds() {
   const parser = new Parser();
-  return Promise.all(FEEDS.map(x => parser.parseURL(x)));
+  return Promise.all(FEEDS.map((x) => parser.parseURL(x)));
 }

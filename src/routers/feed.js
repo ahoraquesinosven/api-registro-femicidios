@@ -1,44 +1,65 @@
-import {fetchAllRssFeeds} from "../services/google/alerts.js";
-import {feedItemFromRss, insertNewFeedItems, fetchFeedItems, assignFeedItem, unassignFeedItem, completeFeedItem, uncompleteFeedItem, countFeedItems, markIrrelevantFeedItem, unmarkIrrelevantFeedItem} from "../data/feedItem.js";
-import {OpenApiRouter} from "../openapi/index.js";
-import {securitySchemes} from "../openapi/securitySchemes.js";
+import {
+  assignFeedItem,
+  completeFeedItem,
+  countFeedItems,
+  feedItemFromRss,
+  fetchFeedItems,
+  insertNewFeedItems,
+  markIrrelevantFeedItem,
+  unassignFeedItem,
+  uncompleteFeedItem,
+  unmarkIrrelevantFeedItem,
+} from "../data/feedItem.js";
+import { OpenApiRouter } from "../openapi/index.js";
+import { securitySchemes } from "../openapi/securitySchemes.js";
+import { fetchAllRssFeeds } from "../services/google/alerts.js";
 
 const router = new OpenApiRouter({
   prefix: "/v1/feed",
 });
 
 router.operation({
-  method: "post", relativePath: "/refresh", spec: {
+  method: "post",
+  relativePath: "/refresh",
+  spec: {
     tags: ["feed"],
+    operationId: "refreshFeeds",
     summary: "Refreshes the feeds by connecting to our feed sources",
     security: [securitySchemes.internal],
     responses: {
-      "204": {
+      204: {
         description: "Successful response",
       },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
     },
   },
-  handlers: [async (ctx) => {
-    const feeds = await fetchAllRssFeeds();
-    for (const feed of feeds) {
-      const feedItems = feed.items.map(item => feedItemFromRss(feed, item));
-      await insertNewFeedItems(feedItems);
-    }
+  handlers: [
+    async (ctx) => {
+      const feeds = await fetchAllRssFeeds();
+      for (const feed of feeds) {
+        const feedItems = feed.items.map((item) => feedItemFromRss(feed, item));
+        await insertNewFeedItems(feedItems);
+      }
 
-    ctx.status = 204;
-  }],
+      ctx.status = 204;
+    },
+  ],
 });
 
 router.operation({
-  method: "get", relativePath: "/items", spec: {
+  method: "get",
+  relativePath: "/items",
+  spec: {
     tags: ["feed"],
+    operationId: "listFeedItems",
     summary: "Retrieves the full list of feed items",
     security: [securitySchemes.internal, securitySchemes.oauth],
     parameters: [
       {
         name: "status",
         in: "query",
-        description: "Filter results to only contain feed items in the given status",
+        description:
+          "Filter results to only contain feed items in the given status",
         schema: {
           type: "string",
           enum: ["backlog", "inProgress", "done"],
@@ -51,102 +72,129 @@ router.operation({
         schema: {
           type: "integer",
           minimum: 0,
-        }
+        },
       },
       {
         name: "start",
         in: "query",
-        description: "Cursor as returned on the `next` property of a previous request to this endpoint",
+        description:
+          "Cursor as returned on the `next` property of a previous request to this endpoint",
         schema: {
           type: "string",
-        }
+        },
       },
     ],
     responses: {
-      "200": {
+      200: {
         description: "Successful response",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/FeedItemListPage" },
+          },
+        },
       },
+      400: { $ref: "#/components/responses/InvalidCursorResponse" },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
     },
   },
-  handlers: [async (ctx) => {
-    const {status, limit, start} = ctx.request.query;
+  handlers: [
+    async (ctx) => {
+      const { status, limit, start } = ctx.request.query;
 
-    const [items, count] = await Promise.all([
-      fetchFeedItems({status, limit, start}),
-      countFeedItems(status),
-    ]);
+      const [items, count] = await Promise.all([
+        fetchFeedItems({ status, limit, start }),
+        countFeedItems(status),
+      ]);
 
-    ctx.body = {
-      limit: parseInt(limit),
-      total: parseInt(count),
-      start,
-      next: items.cursor,
-      page: items.result.map(x => ({
-        id: x.id,
-        feed: {
-          id: x.feedId,
-          name: x.feedName,
-          updatedAt: x.feedUpdatedAt,
-        },
-        publishedAt: x.publishedAt,
-        title: x.title,
-        link: x.link,
-        contentSnippet: x.snippet,
-        isDone: x.isDone,
-        isIrrelevant: x.isIrrelevant,
-        assignedUser: x.assignedUserId ? {
-          name: x.assignedUserName,
-          email: x.assignedUserEmail,
-          pictureUrl: x.assignedUserPictureUrl,
-        } : null,
-      }))
-    };
-  }],
+      ctx.body = {
+        limit: parseInt(limit, 10),
+        total: parseInt(count, 10),
+        start: start ?? null,
+        next: items.cursor,
+        page: items.result.map((x) => ({
+          id: x.id,
+          feed: {
+            id: x.feedId,
+            name: x.feedName,
+            updatedAt: x.feedUpdatedAt,
+          },
+          publishedAt: x.publishedAt,
+          title: x.title,
+          link: x.link,
+          contentSnippet: x.snippet,
+          isDone: x.isDone,
+          isIrrelevant: x.isIrrelevant,
+          assignedUser: x.assignedUserId
+            ? {
+                name: x.assignedUserName,
+                email: x.assignedUserEmail,
+                pictureUrl: x.assignedUserPictureUrl,
+              }
+            : null,
+        })),
+      };
+    },
+  ],
 });
 
 const transitionOperations = [
   {
     method: "post",
     relativePath: "/items/{feedItemId}/assignment",
+    operationId: "assignFeedItem",
     description: "Assigns a given feed item to the current user",
     updateFunction: (feedItemId, userId) => assignFeedItem(feedItemId, userId),
   },
   {
     method: "delete",
     relativePath: "/items/{feedItemId}/assignment",
+    operationId: "unassignFeedItem",
     description: "Removes the assigned user for a given feed item",
     updateFunction: (feedItemId) => unassignFeedItem(feedItemId),
   },
   {
     method: "post",
     relativePath: "/items/{feedItemId}/completion",
-    description: "Marks a single feed item that is assigned to the current user as done",
-    updateFunction: (feedItemId, userId) => completeFeedItem(feedItemId, userId),
+    operationId: "completeFeedItem",
+    description:
+      "Marks a single feed item that is assigned to the current user as done",
+    updateFunction: (feedItemId, userId) =>
+      completeFeedItem(feedItemId, userId),
   },
   {
     method: "delete",
     relativePath: "/items/{feedItemId}/completion",
-    description: "Marks a single feed item that is assigned to the current user as in progress",
-    updateFunction: (feedItemId, userId) => uncompleteFeedItem(feedItemId, userId),
+    operationId: "uncompleteFeedItem",
+    description:
+      "Marks a single feed item that is assigned to the current user as in progress",
+    updateFunction: (feedItemId, userId) =>
+      uncompleteFeedItem(feedItemId, userId),
   },
   {
     method: "post",
     relativePath: "/items/{feedItemId}/irrelevant",
-    description: "Mark a single feed item as irrelevant and assign to current user",
-    updateFunction: (feedItemId, userId) => markIrrelevantFeedItem(feedItemId, userId),
+    operationId: "markFeedItemIrrelevant",
+    description:
+      "Mark a single feed item as irrelevant and assign to current user",
+    updateFunction: (feedItemId, userId) =>
+      markIrrelevantFeedItem(feedItemId, userId),
   },
   {
     method: "delete",
     relativePath: "/items/{feedItemId}/irrelevant",
+    operationId: "unmarkFeedItemIrrelevant",
     description: "Removes the flag irrelevant for a given feed item",
     updateFunction: (feedItemId) => unmarkIrrelevantFeedItem(feedItemId),
   },
-]
+];
 
 for (const op of transitionOperations) {
   router.operation({
-    method: op.method, relativePath: op.relativePath, spec: {
+    method: op.method,
+    relativePath: op.relativePath,
+    spec: {
       tags: ["feed"],
+      operationId: op.operationId,
       summary: op.description,
       security: [securitySchemes.oauth],
       parameters: [
@@ -161,24 +209,31 @@ for (const op of transitionOperations) {
         },
       ],
       responses: {
-        "204": {
+        204: {
           description: "Successful response",
+        },
+        401: { $ref: "#/components/responses/UnauthorizedResponse" },
+        422: {
+          description:
+            "The feed item could not be transitioned (e.g. not found or not assigned to the current user)",
         },
       },
     },
-    handlers: [async (ctx) => {
-      const updatedFeedItems = await op.updateFunction(
-        ctx.params.feedItemId,
-        ctx.state.auth.id
-      );
+    handlers: [
+      async (ctx) => {
+        const updatedFeedItems = await op.updateFunction(
+          ctx.params.feedItemId,
+          ctx.state.auth.id,
+        );
 
-      if (updatedFeedItems.length === 0) {
-        ctx.status = 422;
-        return;
-      }
+        if (updatedFeedItems.length === 0) {
+          ctx.status = 422;
+          return;
+        }
 
-      ctx.status = 204;
-    }],
+        ctx.status = 204;
+      },
+    ],
   });
 }
 
