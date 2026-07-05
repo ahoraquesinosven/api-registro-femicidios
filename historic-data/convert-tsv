@@ -122,7 +122,7 @@ function buildVictim(row) {
     const fullName = p.parseOptionalString(row.victimFullName);
     if (fullName !== undefined) victim.fullName = fullName;
 
-    const age = p.parseInteger(row.victimAge);
+    const age = p.parseDecimal(row.victimAge);
     if (age !== undefined) victim.age = age;
 
     const gender = p.parseGender(row.victimGender);
@@ -130,6 +130,7 @@ function buildVictim(row) {
 
     const nationality = p.parseNationality(row.victimNationality);
     if (nationality !== undefined) victim.nationality = nationality;
+    if (nationality.toLowerCase() === "sin datos") victim.nationality = undefined;
 
     const isSexualWorker = p.parseBoolean(row.victimIsSexualWorker);
     if (isSexualWorker !== undefined) victim.isSexualWorker = isSexualWorker;
@@ -159,6 +160,7 @@ function buildVictim(row) {
 
     const hasChildren = p.parseBoolean(row.hasChildren) || numberOfChildren > 0 || ageOfChildren.length > 0;
     if (hasChildren !== undefined) victim.hasChildren = hasChildren;
+ 
 
     return victim;
 }
@@ -189,7 +191,6 @@ function buildAggressor(row) {
 
     const belongsSecurityForce = p.parseBoolean(row.belongsSecurityForce) || securityForce !== undefined;
     if (belongsSecurityForce !== undefined) aggressor.belongsSecurityForce = belongsSecurityForce;
-
     return aggressor;
 }
 
@@ -220,8 +221,12 @@ function buildCase(row) {
     const caseCategory = p.parseCaseCategory(row.caseCategory);
     if (caseCategory !== undefined) caseObj.caseCategory = caseCategory;
 
-    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("intento de")) caseObj.wasItAnAttempt = true;
-    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("se investiga")) caseObj.isInsufficientDataOrUnderInvestigation = true;
+    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("intento de")) caseObj.wasItAnAttempt = true
+    else caseObj.wasItAnAttempt = false;
+    
+    if (row.caseCategory && row.caseCategory.trim().toLowerCase().startsWith("se investiga")) caseObj.isInsufficientDataOrUnderInvestigation = true
+    else caseObj.isInsufficientDataOrUnderInvestigation = false;
+
 
     const wasJudicialized = p.parseBoolean(row.wasJudicialized);
     if (wasJudicialized !== undefined) caseObj.wasJudicialized = wasJudicialized;
@@ -239,10 +244,19 @@ function buildCase(row) {
     if (isRape !== undefined) caseObj.isRape = isRape;
 
     const organizedCrimeNotes = p.parseOptionalString(row.organizedCrimeNotes);
-    if (organizedCrimeNotes !== undefined) caseObj.organizedCrimeNotes = organizedCrimeNotes;
+    const isRelatedToOrganizedCrimeBoolean = p.parseBoolean(row.isRelatedToOrganizedCrime);
 
-    const isRelatedToOrganizedCrime = p.parseBoolean(row.isRelatedToOrganizedCrime) || Boolean(organizedCrimeNotes);
-    if (isRelatedToOrganizedCrime !== undefined) caseObj.isRelatedToOrganizedCrime = isRelatedToOrganizedCrime;
+    if (organizedCrimeNotes !== undefined) {
+        caseObj.organizedCrimeNotes = organizedCrimeNotes;
+        caseObj.isRelatedToOrganizedCrime = true;
+    } else if (isRelatedToOrganizedCrimeBoolean === true) {
+        caseObj.organizedCrimeNotes = "Pending notes";
+        caseObj.isRelatedToOrganizedCrime = true;
+    } else if (isRelatedToOrganizedCrimeBoolean === false) {
+        caseObj.isRelatedToOrganizedCrime = false;
+    } else {
+        caseObj.isRelatedToOrganizedCrime = null;
+    }
 
     const generalNotes = p.parseOptionalString(row.generalNotes);
     if (generalNotes !== undefined) caseObj.generalNotes = generalNotes;

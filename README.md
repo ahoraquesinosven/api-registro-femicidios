@@ -31,6 +31,8 @@ When it finishes, start the application locally:
 docker compose up
 ```
 
+Once your image is running, run migrations via docker compose run dev knex migrate:latest
+
 To check the API open swagger in http://localhost:8081/ 
 
 ## Testing
