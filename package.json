@@ -9,7 +9,8 @@
     "start:prod": "node src/index.js",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "test": "npm run validate:openapi",
+    "test": "npm run validate:openapi && npm run test:unit",
+    "test:unit": "node --test test/unit/**/*.test.js",
     "test:integration": "node --test --test-concurrency=1 test/integration/*.test.js",
     "dump:openapi": "node src/scripts/dumpOpenapi.js /tmp/openapi.json",
     "validate:openapi": "npm run dump:openapi && redocly lint /tmp/openapi.json"

@@ -68,12 +68,49 @@ export function feedItemFromRss(rssFeed, rssItem) {
   };
 }
 
+function normalizeTitle(title) {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getLinkDomain(link) {
+  try {
+    return new URL(link).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function feedItemDedupeKey({ title, link }) {
+  return `${normalizeTitle(title)}|${getLinkDomain(link)}`;
+}
+
+export function dedupeFeedItems(feedItems) {
+  const seenKeys = new Set();
+
+  return feedItems.filter((feedItem) => {
+    const key = feedItemDedupeKey(feedItem);
+    if (seenKeys.has(key)) {
+      return false;
+    }
+    seenKeys.add(key);
+    return true;
+  });
+}
+
 export async function insertNewFeedItems(feedItems) {
   if (feedItems.length === 0) {
     return;
   }
 
-  await feedItemsTable().insert(feedItems).onConflict().ignore();
+  const uniqueFeedItems = dedupeFeedItems(feedItems);
+
+  await feedItemsTable().insert(uniqueFeedItems).onConflict().ignore();
 }
 
 const feedItemPaginators = {
