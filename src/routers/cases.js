@@ -594,6 +594,7 @@ router.operation({
           "victim.fullName",
           "victim.age",
           "victim.gender",
+          "victim.nationality",
           "victim.isSexualWorker",
           "victim.isMissingPerson",
           "victim.isNativePeople",
