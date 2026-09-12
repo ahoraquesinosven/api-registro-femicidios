@@ -32,6 +32,16 @@ test("response conforms to the OpenAPI spec", async () => {
   assertConformsToSpec("get", "/v1/cases/{caseId}", 200, await res.json());
 });
 
+test("returns the victim's nationality", async () => {
+  await createCase({ victim: { nationality: "ARGENTINA" } });
+
+  const res = await api("/v1/cases/1", {
+    headers: { authorization: ctx.bearer },
+  });
+  const body = await res.json();
+  assert.equal(body.victim.nationality, "ARGENTINA");
+});
+
 test("returns 404 for an unknown id", async () => {
   const res = await api("/v1/cases/9999", {
     headers: { authorization: ctx.bearer },

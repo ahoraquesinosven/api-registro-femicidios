@@ -101,6 +101,7 @@ database, so it doubles as our first quick unit test and is wired into `npm test
 - Alerts are configured in google alerts using email `alertafemicidios@ahoraquesinosven.org.ar`
 - For example, we configured: adulta mayor asesinada,  anciana asesinada, crimen de odio, crimen pasional,  femicidio, femicidio vinculado, joven asesinada, jubilada asesinada, lesboodio, violencia de genero, violencia machista, etc. 
 - Then for each rss feed, we configure it in `src/services/google/alerts.js`
+- In order to know how often we run the process that downloads the news, you need to check in Google Cloud > Cloud Scheduler. As Aug 20, it is scheduled every 6 hours, meaning 00hs > 06hs > 12hs > 18hs
 
 ## Ref links
 - To add validations: https://json-schema.org/understanding-json-schema/reference/conditionals 
