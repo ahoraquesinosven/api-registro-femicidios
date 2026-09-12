@@ -132,6 +132,7 @@ export function parseMurderWeapon(value) {
 
 export function parseCaseCategory(value) {
     const map = {
+        "Femicidio": "FEMICIDIO_DIRECTO",
         "Femicidio Directo": "FEMICIDIO_DIRECTO",
         "Intento de Femicidio": "FEMICIDIO_DIRECTO",
         "Se Investiga - Femicidio": "FEMICIDIO_DIRECTO",
@@ -144,6 +145,7 @@ export function parseCaseCategory(value) {
         "Instigación al suicidio": "INSTIGACION_AL_SUICIDIO",
         "Intento de Transfemicidio": "TRANSFEMICIDIO",
         "Travesticidio": "TRAVESTICIDIO",
+        "Lesbicidio": "LESBICIDIO",
     };
     const trimmedValue = value && value.trim();
     if (!trimmedValue || trimmedValue === "" || trimmedValue.toLowerCase() === "sin datos") return undefined;
