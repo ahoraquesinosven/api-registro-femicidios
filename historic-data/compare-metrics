@@ -1,0 +1,139 @@
+#!/usr/bin/env node
+//
+// Aggregate-level sanity check between a source TSV (Google Forms export) and a
+// `*_BD_results.json` export of what actually landed in the DB for that same batch.
+//
+// Complements convert-tsv's row-level transform: instead of diffing every field of every
+// row, this reports group counts (by category, province, weapon, etc.) side by side so you
+// can validate a migration at a glance before/after running it.
+//
+// Usage: ./compare-metrics <input.tsv> <db_results.json>
+
+import fs from "fs";
+import { parseTsv } from "./lib/tsv-transform.js";
+import { normStr, normBool } from "./lib/normalize.js";
+
+const [tsvPath, dbPath] = process.argv.slice(2);
+if (!tsvPath || !dbPath) {
+    console.error("Usage: ./compare-metrics <input.tsv> <db_results.json>");
+    process.exit(1);
+}
+
+// ---- load + normalize both sides into a common shape ----
+
+function normalizeCase(getField) {
+    return {
+        caseCategory: normStr(getField("caseCategory")),
+        wasItAnAttempt: normBool(getField("wasItAnAttempt")),
+        isInsufficientDataOrUnderInvestigation: normBool(getField("isInsufficientDataOrUnderInvestigation")),
+        province: normStr(getField("province")),
+        momentOfDay: normStr(getField("momentOfDay")),
+        geographicLocation: normStr(getField("geographicLocation")),
+        victimBondAggressor: normStr(getField("victimBondAggressor")),
+        isRelatedToOrganizedCrime: normBool(getField("isRelatedToOrganizedCrime")),
+        murderWeapon: normStr(getField("murderWeapon")),
+    };
+}
+
+const tsvText = fs.readFileSync(tsvPath, "utf-8");
+const tsvRows = parseTsv(tsvText).map((c) => normalizeCase((field) => c[field]));
+
+const dbRaw = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+const dbRows = dbRaw.map((d) => normalizeCase((field) => d[field]));
+
+// ---- sanity header: row counts + id contiguity (same check used for the row-level diff) ----
+
+console.log(`TSV rows (${tsvPath}): ${tsvRows.length}`);
+console.log(`DB rows  (${dbPath}): ${dbRows.length}`);
+
+const ids = dbRaw
+    .map((d) => parseInt(d.id, 10))
+    .filter((n) => !isNaN(n))
+    .sort((a, b) => a - b);
+if (ids.length > 0) {
+    const [minId, maxId] = [ids[0], ids[ids.length - 1]];
+    const contiguous = maxId - minId + 1 === ids.length && new Set(ids).size === ids.length;
+    console.log(
+        `DB id range: ${minId}..${maxId} (${ids.length} unique) — contiguous: ${contiguous}`
+    );
+    if (!contiguous) {
+        console.log("  !! id range has gaps or duplicates — investigate before trusting the counts below.");
+    }
+}
+if (tsvRows.length !== dbRows.length) {
+    console.log(`!! ROW COUNT MISMATCH: tsv=${tsvRows.length} db=${dbRows.length}`);
+}
+console.log("");
+
+// ---- metrics ----
+
+const METRICS = [
+    { name: "Total case count", groupBy: () => "TOTAL" },
+    { name: "By caseCategory", groupBy: (r) => r.caseCategory ?? "(null)" },
+    { name: "By wasItAnAttempt", groupBy: (r) => String(r.wasItAnAttempt) },
+    {
+        name: "By isInsufficientDataOrUnderInvestigation",
+        groupBy: (r) => String(r.isInsufficientDataOrUnderInvestigation),
+    },
+    { name: "By province", groupBy: (r) => r.province ?? "(null)" },
+    { name: "By momentOfDay", groupBy: (r) => r.momentOfDay ?? "(null)" },
+    { name: "By geographicLocation", groupBy: (r) => r.geographicLocation ?? "(null)" },
+    { name: "By victimBondAggressor", groupBy: (r) => r.victimBondAggressor ?? "(null)" },
+    {
+        name: "By isRelatedToOrganizedCrime",
+        groupBy: (r) => String(r.isRelatedToOrganizedCrime),
+        note: "A null-vs-false split here can be expected for batches imported before commit ee4427c, whose convert-tsv defaulted unknown values to false instead of null (confirmed for 2024's 141-row gap; verify the cause before assuming the same for other years).",
+    },
+    {
+        name: "FEMICIDIO_DIRECTO, non-attempt cases by murderWeapon (forma)",
+        filter: (r) => r.caseCategory === "FEMICIDIO_DIRECTO" && r.wasItAnAttempt === false,
+        groupBy: (r) => r.murderWeapon ?? "(null)",
+    },
+];
+
+function countGroups(rows, metric) {
+    const filtered = metric.filter ? rows.filter(metric.filter) : rows;
+    const counts = new Map();
+    for (const row of filtered) {
+        const key = metric.groupBy(row);
+        counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return counts;
+}
+
+function printTable(metric, tsvCounts, dbCounts) {
+    const keys = [...new Set([...tsvCounts.keys(), ...dbCounts.keys()])].sort();
+    const groupWidth = Math.max(5, ...keys.map((k) => k.length), "TOTAL".length);
+
+    console.log(`## ${metric.name}`);
+    if (metric.note) console.log(`   (${metric.note})`);
+    console.log(`${"Group".padEnd(groupWidth)} | TSV  | DB   | Δ`);
+    console.log(`${"-".repeat(groupWidth)}-|------|------|----`);
+
+    let tsvTotal = 0;
+    let dbTotal = 0;
+    for (const key of keys) {
+        const tsvCount = tsvCounts.get(key) || 0;
+        const dbCount = dbCounts.get(key) || 0;
+        tsvTotal += tsvCount;
+        dbTotal += dbCount;
+        const delta = tsvCount - dbCount;
+        const flag = delta !== 0 ? "  <-- diff" : "";
+        console.log(
+            `${key.padEnd(groupWidth)} | ${String(tsvCount).padStart(4)} | ${String(dbCount).padStart(4)} | ${String(delta).padStart(3)}${flag}`
+        );
+    }
+    if (keys.length > 1) {
+        console.log(`${"-".repeat(groupWidth)}-|------|------|----`);
+        console.log(
+            `${"TOTAL".padEnd(groupWidth)} | ${String(tsvTotal).padStart(4)} | ${String(dbTotal).padStart(4)} | ${String(tsvTotal - dbTotal).padStart(3)}`
+        );
+    }
+    console.log("");
+}
+
+for (const metric of METRICS) {
+    const tsvCounts = countGroups(tsvRows, metric);
+    const dbCounts = countGroups(dbRows, metric);
+    printTable(metric, tsvCounts, dbCounts);
+}
