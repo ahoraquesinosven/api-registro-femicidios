@@ -21,6 +21,94 @@ const casesPaginator = keysetPaginator([
 const toDateString = (value) =>
   value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
+// Filters over case.* columns only, shared by the list and stats endpoints.
+// Name filters stay in the list handler: they depend on its victim/aggressor
+// joins, and ctx.query carries undeclared params too.
+const caseFilterParameters = [
+  {
+    name: "fromDate",
+    in: "query",
+    schema: { type: "string", format: "date" },
+  },
+  {
+    name: "toDate",
+    in: "query",
+    schema: { type: "string", format: "date" },
+  },
+  {
+    name: "province",
+    in: "query",
+    schema: { $ref: "#/components/schemas/Province" },
+  },
+  {
+    name: "location",
+    in: "query",
+    schema: { type: "string" },
+  },
+  {
+    name: "caseCategory",
+    in: "query",
+    schema: { $ref: "#/components/schemas/CaseCategory" },
+  },
+  {
+    name: "murderWeapon",
+    in: "query",
+    schema: { $ref: "#/components/schemas/CaseMurderWeapon" },
+  },
+  {
+    name: "victimBondAggressor",
+    in: "query",
+    schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
+  },
+  {
+    name: "wasItAnAttempt",
+    in: "query",
+    schema: { type: "boolean" },
+  },
+];
+
+const applyCaseFilters = (builder, query) => {
+  if (query.fromDate) builder.where("case.occurredAt", ">=", query.fromDate);
+  if (query.toDate) builder.where("case.occurredAt", "<", query.toDate);
+  if (query.province) builder.where("case.province", query.province);
+  if (query.location)
+    builder.whereUnaccentedMatch("case.location", query.location);
+  if (query.caseCategory)
+    builder.where("case.caseCategory", query.caseCategory);
+  if (query.murderWeapon)
+    builder.where("case.murderWeapon", query.murderWeapon);
+  if (query.victimBondAggressor)
+    builder.where("case.victimBondAggressor", query.victimBondAggressor);
+  if (query.wasItAnAttempt)
+    builder.where("case.wasItAnAttempt", query.wasItAnAttempt);
+};
+
+// Counts cases per distinct value of `cols` (qualified, e.g. "case.province"),
+// aliasing each column to its unqualified name.
+const countBy = (builder, ...cols) =>
+  builder
+    .select(cols.map((col) => `${col} as ${col.split(".")[1]}`))
+    .count("case.id as count")
+    .groupBy(cols)
+    .orderBy([{ column: "count", order: "desc" }, ...cols]);
+
+// count(*) of rows where `column` is true / false / null, as three aliases.
+const booleanBreakdown = (column, alias) => [
+  knex.raw(`count(*) filter (where ${column} is true) as "${alias}Yes"`),
+  knex.raw(`count(*) filter (where ${column} is false) as "${alias}No"`),
+  knex.raw(`count(*) filter (where ${column} is null) as "${alias}Unknown"`),
+];
+
+const toBreakdown = (row, alias) => ({
+  yes: Number(row[`${alias}Yes`]),
+  no: Number(row[`${alias}No`]),
+  unknown: Number(row[`${alias}Unknown`]),
+});
+
+// pg returns count() as a string (bigint).
+const withNumericCount = (rows) =>
+  rows.map((row) => ({ ...row, count: Number(row.count) }));
+
 const caseValidations = (body) => {
   const errors = [];
 
@@ -204,55 +292,16 @@ router.operation({
     summary: "List all cases",
     security: [securitySchemes.oauth],
     parameters: [
-      {
-        name: "fromDate",
-        in: "query",
-        schema: { type: "string", format: "date" },
-      },
-      {
-        name: "toDate",
-        in: "query",
-        schema: { type: "string", format: "date" },
-      },
-      {
-        name: "province",
-        in: "query",
-        schema: { $ref: "#/components/schemas/Province" },
-      },
-      {
-        name: "location",
-        in: "query",
-        schema: { type: "string" },
-      },
-      {
-        name: "caseCategory",
-        in: "query",
-        schema: { $ref: "#/components/schemas/CaseCategory" },
-      },
+      ...caseFilterParameters,
       {
         name: "victimFullName",
         in: "query",
         schema: { type: "string" },
       },
       {
-        name: "murderWeapon",
-        in: "query",
-        schema: { $ref: "#/components/schemas/CaseMurderWeapon" },
-      },
-      {
         name: "aggressorFullName",
         in: "query",
         schema: { type: "string" },
-      },
-      {
-        name: "victimBondAggressor",
-        in: "query",
-        schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
-      },
-      {
-        name: "wasItAnAttempt",
-        in: "query",
-        schema: { type: "boolean" },
       },
       {
         name: "limit",
@@ -287,32 +336,14 @@ router.operation({
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where((builder) => {
-          if (ctx.query.fromDate)
-            builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-          if (ctx.query.toDate)
-            builder.where("case.occurredAt", "<", ctx.query.toDate);
-          if (ctx.query.province)
-            builder.where("case.province", ctx.query.province);
-          if (ctx.query.location)
-            builder.whereUnaccentedMatch("case.location", ctx.query.location);
-          if (ctx.query.caseCategory)
-            builder.where("case.caseCategory", ctx.query.caseCategory);
+          applyCaseFilters(builder, ctx.query);
           if (ctx.query.victimFullName)
             builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-          if (ctx.query.murderWeapon)
-            builder.where("case.murderWeapon", ctx.query.murderWeapon);
           if (ctx.query.aggressorFullName)
             builder.whereNameMatch(
               "aggressor.fullName",
               ctx.query.aggressorFullName,
             );
-          if (ctx.query.victimBondAggressor)
-            builder.where(
-              "case.victimBondAggressor",
-              ctx.query.victimBondAggressor,
-            );
-          if (ctx.query.wasItAnAttempt)
-            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
         });
 
       // Count the full filtered set. Knex builders are mutable and
@@ -369,6 +400,79 @@ router.operation({
             aggressor: omitNullValues(item.aggressor),
           }),
         ),
+      };
+    },
+  ],
+});
+
+// Registered before the /{caseId} routes so "stats" isn't captured as a caseId.
+router.operation({
+  method: "get",
+  relativePath: "/stats",
+  spec: {
+    tags: ["cases"],
+    operationId: "getCaseStats",
+    summary: "Aggregated case counts for the dashboard",
+    security: [securitySchemes.oauth],
+    parameters: caseFilterParameters,
+    responses: {
+      200: {
+        description: "Case counts over the filtered set",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/CaseStats" },
+          },
+        },
+      },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
+      422: { $ref: "#/components/responses/ValidationErrorResponse" },
+    },
+  },
+  handlers: [
+    async (ctx) => {
+      // victim/aggressor are 1:1 with case, so the joins don't duplicate rows.
+      const baseQuery = knex("cases as case")
+        .join("victims as victim", "case.victimId", "victim.id")
+        .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
+        .where((builder) => applyCaseFilters(builder, ctx.query));
+
+      const [
+        [totals],
+        byCategoryAndAttempt,
+        byProvince,
+        byMurderWeapon,
+        byVictimBondAggressor,
+        bySecurityForce,
+      ] = await Promise.all([
+        baseQuery
+          .clone()
+          .count("case.id as count")
+          .select(
+            ...booleanBreakdown(`"victim"."isPregnant"`, "pregnant"),
+            ...booleanBreakdown(
+              `"aggressor"."belongsSecurityForce"`,
+              "securityForce",
+            ),
+          ),
+        countBy(baseQuery.clone(), "case.caseCategory", "case.wasItAnAttempt"),
+        countBy(baseQuery.clone(), "case.province"),
+        countBy(baseQuery.clone(), "case.murderWeapon"),
+        countBy(baseQuery.clone(), "case.victimBondAggressor"),
+        countBy(
+          baseQuery.clone().where("aggressor.belongsSecurityForce", true),
+          "aggressor.securityForce",
+        ),
+      ]);
+
+      ctx.body = {
+        total: Number(totals.count),
+        byCategoryAndAttempt: withNumericCount(byCategoryAndAttempt),
+        byProvince: withNumericCount(byProvince),
+        byMurderWeapon: withNumericCount(byMurderWeapon),
+        byVictimBondAggressor: withNumericCount(byVictimBondAggressor),
+        victimIsPregnant: toBreakdown(totals, "pregnant"),
+        aggressorBelongsSecurityForce: toBreakdown(totals, "securityForce"),
+        bySecurityForce: withNumericCount(bySecurityForce),
       };
     },
   ],
