@@ -1,3 +1,5 @@
+import assert from "node:assert";
+import config from "../config/values.js";
 import { booleanBreakdown, countBy } from "../data/caseStats.js";
 import { omit, omitNullValues } from "../lib/fn.js";
 import { keysetPaginator } from "../lib/keysetPagination.js";
@@ -21,7 +23,12 @@ const casesPaginator = keysetPaginator([
 
 // Browser-only cache for the dashboard stats; stats are the same for every
 // user, so caching by URL can't leak data between sessions.
-const CASE_STATS_CACHE_CONTROL = "private, max-age=180";
+const caseStatsCacheMaxAge = Number(config.caseStats.cacheMaxAgeSeconds);
+assert(
+  Number.isInteger(caseStatsCacheMaxAge) && caseStatsCacheMaxAge >= 0,
+  "CASE_STATS_CACHE_MAX_AGE_SECONDS must be a non-negative integer",
+);
+const CASE_STATS_CACHE_CONTROL = `private, max-age=${caseStatsCacheMaxAge}`;
 
 const toDateString = (value) =>
   value instanceof Date ? value.toISOString().slice(0, 10) : value;
@@ -399,7 +406,8 @@ router.operation({
         description: "Case counts over the filtered set",
         headers: {
           "Cache-Control": {
-            description: "Browser may reuse the response for 3 minutes",
+            description:
+              "Browser may reuse the response for CASE_STATS_CACHE_MAX_AGE_SECONDS (default 180)",
             schema: { type: "string", example: CASE_STATS_CACHE_CONTROL },
           },
         },
