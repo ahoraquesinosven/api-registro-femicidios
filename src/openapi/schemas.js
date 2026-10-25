@@ -12,6 +12,7 @@ import allCaseAggressorSecurityForces from "../data/securityForces.js";
 import allVictimBondAggressors from "../data/victimBondAggressor.js";
 import caseSchema from "../openapi/schemas/case.js";
 import caseListItemSchema from "../openapi/schemas/caseListItem.js";
+import caseStatsSchema from "../openapi/schemas/caseStats.js";
 import feedItemSchema from "../openapi/schemas/feedItem.js";
 import { paginatedEnvelope } from "../openapi/schemas/pagination.js";
 import userProfileSchema from "../openapi/schemas/userProfile.js";
@@ -31,6 +32,7 @@ export default {
   CaseAggressorSecurityForce: { enum: allCaseAggressorSecurityForces },
   Case: caseSchema,
   CaseListItem: caseListItemSchema,
+  CaseStats: caseStatsSchema,
   FeedItem: feedItemSchema,
   UserProfile: userProfileSchema,
   CaseListPage: paginatedEnvelope({

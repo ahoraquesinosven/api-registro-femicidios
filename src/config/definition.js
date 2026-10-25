@@ -70,4 +70,12 @@ export default {
       doc: "Connection string to the PG database.",
     }),
   },
+
+  caseStats: {
+    cacheMaxAgeSeconds: entry({
+      envKey: "CASE_STATS_CACHE_MAX_AGE_SECONDS",
+      doc: "Seconds browsers may cache GET /v1/cases/stats responses (Cache-Control max-age).",
+      defaultValue: "180",
+    }),
+  },
 };

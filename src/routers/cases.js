@@ -1,3 +1,6 @@
+import assert from "node:assert";
+import config from "../config/values.js";
+import { booleanBreakdown, countBy } from "../data/caseStats.js";
 import { omit, omitNullValues } from "../lib/fn.js";
 import { keysetPaginator } from "../lib/keysetPagination.js";
 import { OpenApiRouter } from "../openapi/index.js";
@@ -18,8 +21,79 @@ const casesPaginator = keysetPaginator([
   { name: "id", column: "case.id", direction: "desc", type: "id" },
 ]);
 
+// Browser-only cache for the dashboard stats; stats are the same for every
+// user, so caching by URL can't leak data between sessions.
+const caseStatsCacheMaxAge = Number(config.caseStats.cacheMaxAgeSeconds);
+assert(
+  Number.isInteger(caseStatsCacheMaxAge) && caseStatsCacheMaxAge >= 0,
+  "CASE_STATS_CACHE_MAX_AGE_SECONDS must be a non-negative integer",
+);
+const CASE_STATS_CACHE_CONTROL = `private, max-age=${caseStatsCacheMaxAge}`;
+
 const toDateString = (value) =>
   value instanceof Date ? value.toISOString().slice(0, 10) : value;
+
+// Filters over case.* columns only, shared by the list and stats endpoints.
+// Name filters stay in the list handler: they depend on its victim/aggressor
+// joins, and ctx.query carries undeclared params too.
+const caseFilterParameters = [
+  {
+    name: "fromDate",
+    in: "query",
+    schema: { type: "string", format: "date" },
+  },
+  {
+    name: "toDate",
+    in: "query",
+    schema: { type: "string", format: "date" },
+  },
+  {
+    name: "province",
+    in: "query",
+    schema: { $ref: "#/components/schemas/Province" },
+  },
+  {
+    name: "location",
+    in: "query",
+    schema: { type: "string" },
+  },
+  {
+    name: "caseCategory",
+    in: "query",
+    schema: { $ref: "#/components/schemas/CaseCategory" },
+  },
+  {
+    name: "murderWeapon",
+    in: "query",
+    schema: { $ref: "#/components/schemas/CaseMurderWeapon" },
+  },
+  {
+    name: "victimBondAggressor",
+    in: "query",
+    schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
+  },
+  {
+    name: "wasItAnAttempt",
+    in: "query",
+    schema: { type: "boolean" },
+  },
+];
+
+const applyCaseFilters = (builder, query) => {
+  if (query.fromDate) builder.where("case.occurredAt", ">=", query.fromDate);
+  if (query.toDate) builder.where("case.occurredAt", "<", query.toDate);
+  if (query.province) builder.where("case.province", query.province);
+  if (query.location)
+    builder.whereUnaccentedMatch("case.location", query.location);
+  if (query.caseCategory)
+    builder.where("case.caseCategory", query.caseCategory);
+  if (query.murderWeapon)
+    builder.where("case.murderWeapon", query.murderWeapon);
+  if (query.victimBondAggressor)
+    builder.where("case.victimBondAggressor", query.victimBondAggressor);
+  if (query.wasItAnAttempt)
+    builder.where("case.wasItAnAttempt", query.wasItAnAttempt);
+};
 
 const caseValidations = (body) => {
   const errors = [];
@@ -204,55 +278,16 @@ router.operation({
     summary: "List all cases",
     security: [securitySchemes.oauth],
     parameters: [
-      {
-        name: "fromDate",
-        in: "query",
-        schema: { type: "string", format: "date" },
-      },
-      {
-        name: "toDate",
-        in: "query",
-        schema: { type: "string", format: "date" },
-      },
-      {
-        name: "province",
-        in: "query",
-        schema: { $ref: "#/components/schemas/Province" },
-      },
-      {
-        name: "location",
-        in: "query",
-        schema: { type: "string" },
-      },
-      {
-        name: "caseCategory",
-        in: "query",
-        schema: { $ref: "#/components/schemas/CaseCategory" },
-      },
+      ...caseFilterParameters,
       {
         name: "victimFullName",
         in: "query",
         schema: { type: "string" },
       },
       {
-        name: "murderWeapon",
-        in: "query",
-        schema: { $ref: "#/components/schemas/CaseMurderWeapon" },
-      },
-      {
         name: "aggressorFullName",
         in: "query",
         schema: { type: "string" },
-      },
-      {
-        name: "victimBondAggressor",
-        in: "query",
-        schema: { $ref: "#/components/schemas/CaseVictimBondAggressor" },
-      },
-      {
-        name: "wasItAnAttempt",
-        in: "query",
-        schema: { type: "boolean" },
       },
       {
         name: "limit",
@@ -287,32 +322,14 @@ router.operation({
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
         .where((builder) => {
-          if (ctx.query.fromDate)
-            builder.where("case.occurredAt", ">=", ctx.query.fromDate);
-          if (ctx.query.toDate)
-            builder.where("case.occurredAt", "<", ctx.query.toDate);
-          if (ctx.query.province)
-            builder.where("case.province", ctx.query.province);
-          if (ctx.query.location)
-            builder.whereUnaccentedMatch("case.location", ctx.query.location);
-          if (ctx.query.caseCategory)
-            builder.where("case.caseCategory", ctx.query.caseCategory);
+          applyCaseFilters(builder, ctx.query);
           if (ctx.query.victimFullName)
             builder.whereNameMatch("victim.fullName", ctx.query.victimFullName);
-          if (ctx.query.murderWeapon)
-            builder.where("case.murderWeapon", ctx.query.murderWeapon);
           if (ctx.query.aggressorFullName)
             builder.whereNameMatch(
               "aggressor.fullName",
               ctx.query.aggressorFullName,
             );
-          if (ctx.query.victimBondAggressor)
-            builder.where(
-              "case.victimBondAggressor",
-              ctx.query.victimBondAggressor,
-            );
-          if (ctx.query.wasItAnAttempt)
-            builder.where("case.wasItAnAttempt", ctx.query.wasItAnAttempt);
         });
 
       // Count the full filtered set. Knex builders are mutable and
@@ -368,6 +385,78 @@ router.operation({
             victim: omitNullValues(item.victim),
             aggressor: omitNullValues(item.aggressor),
           }),
+        ),
+      };
+    },
+  ],
+});
+
+// Registered before the /{caseId} routes so "stats" isn't captured as a caseId.
+router.operation({
+  method: "get",
+  relativePath: "/stats",
+  spec: {
+    tags: ["cases"],
+    operationId: "getCaseStats",
+    summary: "Aggregated case counts for the dashboard",
+    security: [securitySchemes.oauth],
+    parameters: caseFilterParameters,
+    responses: {
+      200: {
+        description: "Case counts over the filtered set",
+        headers: {
+          "Cache-Control": {
+            description:
+              "Browser may reuse the response for CASE_STATS_CACHE_MAX_AGE_SECONDS (default 180)",
+            schema: { type: "string", example: CASE_STATS_CACHE_CONTROL },
+          },
+        },
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/CaseStats" },
+          },
+        },
+      },
+      401: { $ref: "#/components/responses/UnauthorizedResponse" },
+      422: { $ref: "#/components/responses/ValidationErrorResponse" },
+    },
+  },
+  handlers: [
+    async (ctx) => {
+      // victim/aggressor are 1:1 with case, so the joins don't duplicate rows.
+      // One query for the filtered rows; aggregates are computed in memory.
+      const rows = await knex("cases as case")
+        .join("victims as victim", "case.victimId", "victim.id")
+        .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
+        .where((builder) => applyCaseFilters(builder, ctx.query))
+        .select(
+          "case.caseCategory",
+          "case.wasItAnAttempt",
+          "case.province",
+          "case.murderWeapon",
+          "case.victimBondAggressor",
+          "victim.isPregnant",
+          "aggressor.belongsSecurityForce",
+          "aggressor.securityForce",
+        );
+
+      // Set here, not in a middleware: auth/validation errors throw before the
+      // handler, so only 200s get cached.
+      ctx.set("Cache-Control", CASE_STATS_CACHE_CONTROL);
+      ctx.body = {
+        total: rows.length,
+        byCategoryAndAttempt: countBy(rows, "caseCategory", "wasItAnAttempt"),
+        byProvince: countBy(rows, "province"),
+        byMurderWeapon: countBy(rows, "murderWeapon"),
+        byVictimBondAggressor: countBy(rows, "victimBondAggressor"),
+        victimIsPregnant: booleanBreakdown(rows, "isPregnant"),
+        aggressorBelongsSecurityForce: booleanBreakdown(
+          rows,
+          "belongsSecurityForce",
+        ),
+        bySecurityForce: countBy(
+          rows.filter((row) => row.belongsSecurityForce === true),
+          "securityForce",
         ),
       };
     },

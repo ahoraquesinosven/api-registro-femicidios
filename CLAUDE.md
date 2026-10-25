@@ -127,7 +127,17 @@ Two security schemes (`src/openapi/securitySchemes.js`):
 
 `src/openapi/schemas/case.js` — the main Case JSON Schema for request validation.
 
-`src/data/*.js` — enum arrays for every enumerated field (provinces, genders, weapons, etc.). These are imported into `src/openapi/schemas.js` as named schemas and referenced as `{ $ref: "#/components/schemas/..." }` in route specs and in `case.js`.
+`src/data/*.js` — mostly enum arrays for every enumerated field (provinces, genders, weapons, etc.). These are imported into `src/openapi/schemas.js` as named schemas and referenced as `{ $ref: "#/components/schemas/..." }` in route specs and in `case.js`.
+
+Exception: `src/data/caseStats.js` holds no enum. It exports pure aggregation helpers (`countBy`, `booleanBreakdown`) used by `GET /v1/cases/stats`.
+
+### Case stats
+
+`GET /v1/cases/stats` runs **one** query that fetches the filtered case rows (only the columns the stats need), then computes every aggregate in JS with the helpers from `src/data/caseStats.js`. This replaced the earlier approach of one SQL `GROUP BY` query per aggregate. It assumes the case table stays small (< 20k rows), so loading the filtered rows into memory is cheap.
+
+- `countBy` sorts by count desc, then by each key asc with nulls last, false < true. This matches the order the SQL version produced, and the integration tests assert it with `deepEqual`. Strings compare by code point, like the `C` collation.
+- To add a new aggregate, add its column to the handler's `select` and compute it from `rows`. Don't add another query.
+- Successful responses carry `Cache-Control: private, max-age=<n>` (browser-only). `n` comes from `CASE_STATS_CACHE_MAX_AGE_SECONDS` (default 180). In prod it's set from the `_CASE_STATS_CACHE_MAX_AGE_SECONDS` Cloud Build substitution, so a value changed only in the Cloud Run console is reset on the next deploy. It's safe only because stats don't depend on the user. There is no invalidation, so after an edit the UI must fetch with `cache: "no-cache"` if it needs fresh numbers. Don't copy this header onto per-user endpoints.
 
 ### Adding a new field to a case
 

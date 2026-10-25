@@ -1,5 +1,7 @@
 substitutions:
   _SERVICE_NAME: api-registro
+  # Default; override per trigger to change the stats browser cache in prod.
+  _CASE_STATS_CACHE_MAX_AGE_SECONDS: '180'
 
 steps:
   # Build the production docker image
@@ -43,6 +45,7 @@ steps:
       '--region', 'us-central1',
       '--image', 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$SHORT_SHA',
       '--allow-unauthenticated',
+      '--set-env-vars', 'CASE_STATS_CACHE_MAX_AGE_SECONDS=${_CASE_STATS_CACHE_MAX_AGE_SECONDS}',
       '--set-env-vars', 'SERVER_CANNONICAL_ORIGIN=${_SERVER_CANNONICAL_ORIGIN}',
       '--set-env-vars', 'AUTH_GOOGLE_CLIENT_ID=${_AUTH_GOOGLE_CLIENT_ID}',
       '--set-env-vars', 'AUTH_GOOGLE_CLIENT_SECRET=${_AUTH_GOOGLE_CLIENT_SECRET}',
