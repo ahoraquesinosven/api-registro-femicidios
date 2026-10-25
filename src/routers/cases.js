@@ -2,6 +2,7 @@ import { omit, omitNullValues } from "../lib/fn.js";
 import { keysetPaginator } from "../lib/keysetPagination.js";
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
+import { booleanBreakdown, countBy } from "../data/caseStats.js";
 import knex from "../services/knex.js";
 
 const router = new OpenApiRouter({
@@ -82,32 +83,6 @@ const applyCaseFilters = (builder, query) => {
   if (query.wasItAnAttempt)
     builder.where("case.wasItAnAttempt", query.wasItAnAttempt);
 };
-
-// Counts cases per distinct value of `cols` (qualified, e.g. "case.province"),
-// aliasing each column to its unqualified name.
-const countBy = (builder, ...cols) =>
-  builder
-    .select(cols.map((col) => `${col} as ${col.split(".")[1]}`))
-    .count("case.id as count")
-    .groupBy(cols)
-    .orderBy([{ column: "count", order: "desc" }, ...cols]);
-
-// count(*) of rows where `column` is true / false / null, as three aliases.
-const booleanBreakdown = (column, alias) => [
-  knex.raw(`count(*) filter (where ${column} is true) as "${alias}Yes"`),
-  knex.raw(`count(*) filter (where ${column} is false) as "${alias}No"`),
-  knex.raw(`count(*) filter (where ${column} is null) as "${alias}Unknown"`),
-];
-
-const toBreakdown = (row, alias) => ({
-  yes: Number(row[`${alias}Yes`]),
-  no: Number(row[`${alias}No`]),
-  unknown: Number(row[`${alias}Unknown`]),
-});
-
-// pg returns count() as a string (bigint).
-const withNumericCount = (rows) =>
-  rows.map((row) => ({ ...row, count: Number(row.count) }));
 
 const caseValidations = (body) => {
   const errors = [];
@@ -431,48 +406,37 @@ router.operation({
   handlers: [
     async (ctx) => {
       // victim/aggressor are 1:1 with case, so the joins don't duplicate rows.
-      const baseQuery = knex("cases as case")
+      // One query for the filtered rows; aggregates are computed in memory.
+      const rows = await knex("cases as case")
         .join("victims as victim", "case.victimId", "victim.id")
         .join("aggressors as aggressor", "case.aggressorId", "aggressor.id")
-        .where((builder) => applyCaseFilters(builder, ctx.query));
-
-      const [
-        [totals],
-        byCategoryAndAttempt,
-        byProvince,
-        byMurderWeapon,
-        byVictimBondAggressor,
-        bySecurityForce,
-      ] = await Promise.all([
-        baseQuery
-          .clone()
-          .count("case.id as count")
-          .select(
-            ...booleanBreakdown(`"victim"."isPregnant"`, "pregnant"),
-            ...booleanBreakdown(
-              `"aggressor"."belongsSecurityForce"`,
-              "securityForce",
-            ),
-          ),
-        countBy(baseQuery.clone(), "case.caseCategory", "case.wasItAnAttempt"),
-        countBy(baseQuery.clone(), "case.province"),
-        countBy(baseQuery.clone(), "case.murderWeapon"),
-        countBy(baseQuery.clone(), "case.victimBondAggressor"),
-        countBy(
-          baseQuery.clone().where("aggressor.belongsSecurityForce", true),
+        .where((builder) => applyCaseFilters(builder, ctx.query))
+        .select(
+          "case.caseCategory",
+          "case.wasItAnAttempt",
+          "case.province",
+          "case.murderWeapon",
+          "case.victimBondAggressor",
+          "victim.isPregnant",
+          "aggressor.belongsSecurityForce",
           "aggressor.securityForce",
-        ),
-      ]);
+        );
 
       ctx.body = {
-        total: Number(totals.count),
-        byCategoryAndAttempt: withNumericCount(byCategoryAndAttempt),
-        byProvince: withNumericCount(byProvince),
-        byMurderWeapon: withNumericCount(byMurderWeapon),
-        byVictimBondAggressor: withNumericCount(byVictimBondAggressor),
-        victimIsPregnant: toBreakdown(totals, "pregnant"),
-        aggressorBelongsSecurityForce: toBreakdown(totals, "securityForce"),
-        bySecurityForce: withNumericCount(bySecurityForce),
+        total: rows.length,
+        byCategoryAndAttempt: countBy(rows, "caseCategory", "wasItAnAttempt"),
+        byProvince: countBy(rows, "province"),
+        byMurderWeapon: countBy(rows, "murderWeapon"),
+        byVictimBondAggressor: countBy(rows, "victimBondAggressor"),
+        victimIsPregnant: booleanBreakdown(rows, "isPregnant"),
+        aggressorBelongsSecurityForce: booleanBreakdown(
+          rows,
+          "belongsSecurityForce",
+        ),
+        bySecurityForce: countBy(
+          rows.filter((row) => row.belongsSecurityForce === true),
+          "securityForce",
+        ),
       };
     },
   ],
