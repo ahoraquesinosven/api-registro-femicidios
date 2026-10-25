@@ -96,6 +96,13 @@ database, so it doubles as our first quick unit test and is wired into `npm test
   - For edit / PUT, remember to add default value in `null` for the new fields in defaultCase or defaultVctim or defaultAggressor
   - For get by ID, remeber to add the new field in the nested object 
 
+## Case stats
+- `GET /v1/cases/stats` (used by the dashboard) is in `src/routers/cases.js`
+- It runs a single query that brings the filtered case rows, and then calculates all the counts in the code
+- The calculation helpers (`countBy`, `booleanBreakdown`) are in `src/data/caseStats.js`. Note that this is the only file in `src/data/` that is not an enum list
+- To add a new stat, add the column to the `select` of the stats handler and calculate it from the rows. Do not add a new query
+- The response schema is in `src/openapi/schemas/caseStats.js`
+
 
 ## Feed Items
 - Alerts are configured in google alerts using email `alertafemicidios@ahoraquesinosven.org.ar`
