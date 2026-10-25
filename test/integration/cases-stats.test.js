@@ -21,6 +21,15 @@ const sumCounts = (rows) => rows.reduce((acc, row) => acc + row.count, 0);
 test("returns 401 without auth", async () => {
   const res = await api("/v1/cases/stats");
   assert.equal(res.status, 401);
+  assert.equal(res.headers.get("cache-control"), null);
+});
+
+test("lets the browser cache stats for 3 minutes", async () => {
+  const res = await api("/v1/cases/stats", {
+    headers: { authorization: ctx.bearer },
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "private, max-age=180");
 });
 
 test("returns zeroed stats when there are no cases", async () => {

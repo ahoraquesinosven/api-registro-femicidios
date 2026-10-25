@@ -19,6 +19,10 @@ const casesPaginator = keysetPaginator([
   { name: "id", column: "case.id", direction: "desc", type: "id" },
 ]);
 
+// Browser-only cache for the dashboard stats; stats are the same for every
+// user, so caching by URL can't leak data between sessions.
+const CASE_STATS_CACHE_CONTROL = "private, max-age=180";
+
 const toDateString = (value) =>
   value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
@@ -393,6 +397,12 @@ router.operation({
     responses: {
       200: {
         description: "Case counts over the filtered set",
+        headers: {
+          "Cache-Control": {
+            description: "Browser may reuse the response for 3 minutes",
+            schema: { type: "string", example: CASE_STATS_CACHE_CONTROL },
+          },
+        },
         content: {
           "application/json": {
             schema: { $ref: "#/components/schemas/CaseStats" },
@@ -422,6 +432,9 @@ router.operation({
           "aggressor.securityForce",
         );
 
+      // Set here, not in a middleware: auth/validation errors throw before the
+      // handler, so only 200s get cached.
+      ctx.set("Cache-Control", CASE_STATS_CACHE_CONTROL);
       ctx.body = {
         total: rows.length,
         byCategoryAndAttempt: countBy(rows, "caseCategory", "wasItAnAttempt"),

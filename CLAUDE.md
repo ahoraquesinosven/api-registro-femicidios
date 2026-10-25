@@ -137,6 +137,7 @@ Exception: `src/data/caseStats.js` holds no enum. It exports pure aggregation he
 
 - `countBy` sorts by count desc, then by each key asc with nulls last, false < true. This matches the order the SQL version produced, and the integration tests assert it with `deepEqual`. Strings compare by code point, like the `C` collation.
 - To add a new aggregate, add its column to the handler's `select` and compute it from `rows`. Don't add another query.
+- Successful responses carry `Cache-Control: private, max-age=180` (browser-only, 3 minutes). It's safe only because stats don't depend on the user. There is no invalidation, so after an edit the UI must fetch with `cache: "no-cache"` if it needs fresh numbers. Don't copy this header onto per-user endpoints.
 
 ### Adding a new field to a case
 
