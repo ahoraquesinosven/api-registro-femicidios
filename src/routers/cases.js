@@ -1,8 +1,8 @@
+import { booleanBreakdown, countBy } from "../data/caseStats.js";
 import { omit, omitNullValues } from "../lib/fn.js";
 import { keysetPaginator } from "../lib/keysetPagination.js";
 import { OpenApiRouter } from "../openapi/index.js";
 import { securitySchemes } from "../openapi/securitySchemes.js";
-import { booleanBreakdown, countBy } from "../data/caseStats.js";
 import knex from "../services/knex.js";
 
 const router = new OpenApiRouter({
