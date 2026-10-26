@@ -136,9 +136,11 @@ export function parseCaseCategory(value) {
         "Femicidio Directo": "FEMICIDIO_DIRECTO",
         "Intento de Femicidio": "FEMICIDIO_DIRECTO",
         "Se Investiga - Femicidio": "FEMICIDIO_DIRECTO",
+        "Se Investiga": "FEMICIDIO_DIRECTO",
         "Femicidio Vinculado": "FEMICIDIO_VINCULADO",
         "Intento de Femicidio Vinculado": "FEMICIDIO_VINCULADO",
         "Transfemicidio": "TRANSFEMICIDIO",
+        "Travesticidio": "TRAVESTICIDIO",
         "Travesticidio/Transfemicidio": "TRAVESTICIDIO",
         "Intento de Travesticidio/Transfemicidio": "TRAVESTICIDIO",
         "Crímenes de Odio": "CRIMEN_DE_ODIO",
@@ -146,6 +148,7 @@ export function parseCaseCategory(value) {
         "Intento de Transfemicidio": "TRANSFEMICIDIO",
         "Travesticidio": "TRAVESTICIDIO",
         "Lesbicidio": "LESBICIDIO",
+        "Intento de Lesbicidio": "LESBICIDIO",
     };
     const trimmedValue = value && value.trim();
     if (!trimmedValue || trimmedValue === "" || trimmedValue.toLowerCase() === "sin datos") return undefined;
@@ -178,7 +181,8 @@ export function parseVictimBondAggressor(value) {
 
 export function parseDate(value) {
     if (!value || value.trim() === "") return undefined;
-    const [day, month, year] = value.trim().split("/");
+    // const [day, month, year] = value.trim().split("/");
+    const [month, day, year] = value.trim().split("/");
     if (!day || !month || !year) return undefined;
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }

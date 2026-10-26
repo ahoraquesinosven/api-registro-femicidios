@@ -28,8 +28,8 @@ export const headers = [
     "totalLegalComplaints",
     "wasJudicialized",
     "isRape",
-    "isRelatedToOrganizedCrime",
-    "organizedCrimeNotes",
+    // "isRelatedToOrganizedCrime",
+    // "organizedCrimeNotes",
     "hasChildren",
     "numberOfChildren",
     "ageOfChildren_1_1",
@@ -99,12 +99,12 @@ export const headers = [
     "generalNotes",
     "newsLink_1",
     "newsLink_2",
-    "behaviourPostCase2",
+    //"behaviourPostCase2",
     IGNORE_TOKEN,
-    IGNORE_TOKEN,
-    "mediaGenderApproach",
-    IGNORE_TOKEN,
-    IGNORE_TOKEN,
+    //IGNORE_TOKEN,
+    //"mediaGenderApproach",
+    //IGNORE_TOKEN,
+    //IGNORE_TOKEN,
 ];
 
 export function buildVictim(row) {
